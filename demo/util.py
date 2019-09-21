@@ -367,7 +367,7 @@ def reduce_mem_usage(df, verbose=True):
     return df
 
 
-def lgb_model(X_train, X_test, **params):
+def lgb_model(X_train, X_test, validation_type, **params):
     """
     lgb 模型
     :param new_train:
@@ -443,9 +443,7 @@ def lgb_model(X_train, X_test, **params):
 
         # 存放特征重要性
         feature_importance_df = pd.DataFrame()
-        # splits_type
-        splits_type = ['before']
-        for index, value in enumerate(splits_type):
+        for index, value in enumerate(validation_type):
             print('第 ' + str(index) + ' 折')
 
             # 获取验证集
@@ -464,13 +462,13 @@ def lgb_model(X_train, X_test, **params):
             bst = lgb.train(params, train_data, valid_sets=[validation_data], num_boost_round=10000, verbose_eval=1000,
                             early_stopping_rounds=2019, feval=lgb_f1_score)
             oof_lgb[test_x.index] += bst.predict(test_x)
-            prediction_lgb += bst.predict(X_test.drop(DefaultConfig.label_column, axis=1)) / len(
-                splits_type)
+            prediction_lgb += bst.predict(X_test.drop(DefaultConfig.label_column, axis=1)) / len(validation_type)
             gc.collect()
 
             fold_importance_df = pd.DataFrame()
             fold_importance_df["feature"] = list(test_x.columns)
-            fold_importance_df["importance"] = bst.feature_importance(importance_type='split', iteration=bst.best_iteration)
+            fold_importance_df["importance"] = bst.feature_importance(importance_type='split',
+                                                                      iteration=bst.best_iteration)
             fold_importance_df["fold"] = index + 1
             feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
 
@@ -514,7 +512,7 @@ def lgb_model(X_train, X_test, **params):
     return prediction
 
 
-def generate_submition(prediction, X_test, **params):
+def generate_submition(prediction, X_test, validation_type, submit_or_not=True, **params):
     """
     生成集过
     :param prediction:
@@ -522,16 +520,35 @@ def generate_submition(prediction, X_test, **params):
     :param params:
     :return:
     """
+    import numpy as np
+
     sub = pd.DataFrame(data=X_test['ID'].astype(int), columns=['ID'])
 
-    result = []
-    for i in prediction:
-        if i >= 0.5:
-            result.append(1)
-        else:
-            result.append(0)
+    print('before sum(prediction=1): ', len([i for i in prediction if i >= 0.5]))
+    print('before sum(prediction=0): ', len([i for i in prediction if i < 0.5]))
+    print('var(prediction): ', np.var(np.array(prediction)))
+    if submit_or_not:
+        result = []
+        for i in prediction:
+            if i >= 0.5 + np.var(np.array(prediction)):
+                result.append(1)
+            else:
+                result.append(0)
+        sub['Predicted_Results'] = result
+        # 设置id为固定模式
+        _, ids = get_df_test()
+        # 设置成“category”数据类型
+        sub['ID'] = sub['ID'].astype('category')
+        # inplace = True，使 recorder_categories生效
+        sub['ID'].cat.reorder_categories(ids, inplace=True)
+        # inplace = True，使 df生效
+        sub.sort_values('ID', inplace=True)
+        print('after sum(prediction=1): ', len([i for i in result if i == 1]))
+        print('before sum(prediction=0): ', len([i for i in result if i == 0]))
+        sub.to_csv(path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_' +
+                               validation_type + '_rate_submit.csv', index=False, encoding='utf-8')
 
-    sub['Predicted_Results'] = result
+    sub['Predicted_Results'] = prediction
 
     # 设置id为固定模式
     _, ids = get_df_test()
@@ -542,10 +559,32 @@ def generate_submition(prediction, X_test, **params):
     # inplace = True，使 df生效
     sub.sort_values('ID', inplace=True)
 
-    sub.to_csv(
-        path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_before_submit.csv',
-        index=False, encoding='utf-8')
+    sub.to_csv(path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_' +
+                           validation_type + '_submit.csv', index=False, encoding='utf-8')
     return sub
+
+
+def merge(**params):
+    """
+    merge
+    :param params:
+    :return:
+    """
+    before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+    after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
+
+    before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
+
+    result = []
+    for i in list(before['Predicted_Results']):
+        if i >= 0.5:
+            result.append(1)
+        else:
+            result.append(0)
+
+    before['Predicted_Results'] = result
+
+    before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
 
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()

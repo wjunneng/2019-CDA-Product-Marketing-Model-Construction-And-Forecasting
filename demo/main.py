@@ -22,12 +22,16 @@ def main():
     df_test = df_test[DefaultConfig.columns]
 
     # 获取验证集数据
-    prediction = lgb_model(df_training, df_test)
+    prediction = lgb_model(df_training, df_test, validation_type=['before'])
     print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
 
     # 生成提交结果
-    generate_submition(prediction, df_test)
+    generate_submition(prediction, df_test, validation_type='before')
     print('\n生成提交结果 耗时： %s \n' % str(time.clock() - start))
+    #
+    # # merge
+    # merge()
+    # print('\nmerge 耗时： %s \n' % str(time.clock() - start))
 
 
 if __name__ == '__main__':

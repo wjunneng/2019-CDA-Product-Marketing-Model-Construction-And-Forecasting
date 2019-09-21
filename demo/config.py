@@ -43,3 +43,10 @@ class DefaultConfig(object):
     columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'", "gender",
                "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
                "'Cumulative using time'", "'Purchase or not'"]
+
+    # lgb before submit
+    lgb_before_submit = project_path + '/data/submit/lgb_before_submit.csv'
+    # lgb after submit
+    lgb_after_submit = project_path + '/data/submit/lgb_after_submit.csv'
+    # lgb submit
+    lgb_submit = project_path + '/data/submit/lgb_submit.csv'
