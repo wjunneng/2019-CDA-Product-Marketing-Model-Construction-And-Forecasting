@@ -28,7 +28,7 @@ class DefaultConfig(object):
     label_column = "'Purchase or not'"
 
     # cache_path
-    df_no_replace = True
+    df_no_replace = False
     df_training_cache_path = project_path + '/data/cache/df_training.h5'
     df_test_cache_path = project_path + '/data/cache/df_test.h5'
 
@@ -39,3 +39,7 @@ class DefaultConfig(object):
     # 类别特征
     categorical_columns = ["'User area'", "gender", "'Cumulative using time'", "'Product service usage'",
                            "'Pay a monthly fee by credit card'", "'Active user'"]
+
+    columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'", "gender",
+               "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
+               "'Cumulative using time'", "'Purchase or not'"]

@@ -273,53 +273,54 @@ def preprocess(save=True, **params):
         df_test = deal_Product_using_score(df_test)
         df_training = deal_Product_using_score(df_training)
 
-        # # 二、处理User_area     用户地区
-        # df_test = deal_User_area(df_test)
-        # df_training = deal_User_area(df_training)
+        # 二、处理User_area     用户地区
+        df_test = deal_User_area(df_test)
+        df_training = deal_User_area(df_training)
 
-        # # 三、处理gender    性别
-        # df_test = deal_gender(df_test)
-        # df_training = deal_gender(df_training)
+        # 三、处理gender    性别
+        df_test = deal_gender(df_test)
+        df_training = deal_gender(df_training)
 
         # 四、处理age  年龄
         df_test = deal_age(df_test)
         df_training = deal_age(df_training)
 
-        # # 五、处理Cumulative_using_time     使用累计时间
-        # df_test = deal_Cumulative_using_time(df_test)
-        # df_training = deal_Cumulative_using_time(df_training)
+        # 五、处理Cumulative_using_time     使用累计时间
+        df_test = deal_Cumulative_using_time(df_test)
+        df_training = deal_Cumulative_using_time(df_training)
 
         # 六、处理Point_balance     点数余额
         df_test = deal_Point_balance(df_test)
         df_training = deal_Point_balance(df_training)
 
-        # # 七、处理Product_service_usage 产品服务实用量
-        # df_test = deal_Product_service_usage(df_test)
-        # df_training = deal_Product_service_usage(df_training)
+        # 七、处理Product_service_usage 产品服务实用量
+        df_test = deal_Product_service_usage(df_test)
+        df_training = deal_Product_service_usage(df_training)
 
-        # # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
-        # df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
-        # df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
+        # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
+        df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
+        df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
 
-        # # 九、处理Active_user   是否为活跃用户
-        # df_test = deal_Active_user(df_test)
-        # df_training = deal_Active_user(df_training)
+        # 九、处理Active_user   是否为活跃用户
+        df_test = deal_Active_user(df_test)
+        df_training = deal_Active_user(df_training)
 
         # 十、处理Estimated_salary  估计薪资
         df_test = deal_Estimated_salary(df_test)
         df_training = deal_Estimated_salary(df_training)
 
-        df = pd.concat([df_training, df_test], axis=0, ignore_index=True)
-        df, new_columns = one_hot_encoder(df, categorical_columns=DefaultConfig.categorical_columns)
-        print('before: (%d, %d)' % (df_training.shape[0], df_test.shape[0]))
-        print('before: (%d)' % (len(df_training.columns)))
-        count = df_training.shape[0]
-        print('count', count)
-        df_training = df.loc[:count - 1, :]
-        df_test = df.loc[count:, :]
-        df_test.reset_index(inplace=True, drop=True)
-        print('after: (%d, %d)' % (df_training.shape[0], df_test.shape[0]))
-        print('after: (%d)' % (len(df_training.columns)))
+        # 效果不好待优化
+        # df = pd.concat([df_training, df_test], axis=0, ignore_index=True)
+        # df, new_columns = one_hot_encoder(df, categorical_columns=DefaultConfig.categorical_columns)
+        # print('before: (%d, %d)' % (df_training.shape[0], df_test.shape[0]))
+        # print('before: (%d)' % (len(df_training.columns)))
+        # count = df_training.shape[0]
+        # print('count', count)
+        # df_training = df.loc[:count - 1, :]
+        # df_test = df.loc[count:, :]
+        # df_test.reset_index(inplace=True, drop=True)
+        # print('after: (%d, %d)' % (df_training.shape[0], df_test.shape[0]))
+        # print('after: (%d)' % (len(df_training.columns)))
 
         if save:
             df_training.to_hdf(path_or_buf=df_training_path, key='df_training')
@@ -467,6 +468,12 @@ def lgb_model(X_train, X_test, **params):
                 splits_type)
             gc.collect()
 
+            fold_importance_df = pd.DataFrame()
+            fold_importance_df["feature"] = list(test_x.columns)
+            fold_importance_df["importance"] = bst.feature_importance(importance_type='split', iteration=bst.best_iteration)
+            fold_importance_df["fold"] = index + 1
+            feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
+
         oof += oof_lgb / num_model_seed
         prediction += prediction_lgb / num_model_seed
         print('logloss', log_loss(pd.get_dummies(y_train).values, oof_lgb))
@@ -474,11 +481,11 @@ def lgb_model(X_train, X_test, **params):
         print('the roc_auc_score for train:', roc_auc_score(y_train, oof_lgb))
 
         if feature_importance is None:
-            feature_importance = None
+            feature_importance = feature_importance_df
         else:
             feature_importance += feature_importance_df
-            feature_importance['importance'] /= num_model_seed
 
+    feature_importance['importance'] /= num_model_seed
     print('logloss', log_loss(pd.get_dummies(y_train).values, oof))
     print('ac', roc_auc_score(y_train, oof))
 

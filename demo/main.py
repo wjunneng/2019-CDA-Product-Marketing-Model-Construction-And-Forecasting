@@ -1,5 +1,6 @@
 import warnings
 from util import *
+from config import DefaultConfig
 
 warnings.filterwarnings('ignore')
 
@@ -16,6 +17,9 @@ def main():
     # 加载数据
     df_training, df_test = preprocess()
     print('\n加载数据 耗时： %s \n' % str(time.clock() - start))
+
+    df_training = df_training[DefaultConfig.columns]
+    df_test = df_test[DefaultConfig.columns]
 
     # 获取验证集数据
     prediction = lgb_model(df_training, df_test)
