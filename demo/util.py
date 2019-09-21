@@ -530,7 +530,7 @@ def generate_submition(prediction, X_test, validation_type, submit_or_not=True, 
     if submit_or_not:
         result = []
         for i in prediction:
-            if i >= 0.5 + np.var(np.array(prediction)):
+            if i >= 0.5 + 0.5*np.var(np.array(prediction)):
                 result.append(1)
             else:
                 result.append(0)
