@@ -415,7 +415,7 @@ def lgb_model(X_train, X_test, **params):
         # 存放特征重要性
         feature_importance_df = pd.DataFrame()
         # splits_type
-        splits_type = ['before']
+        splits_type = ['after']
         for index, value in enumerate(splits_type):
             print('第 ' + str(index) + ' 折')
 
@@ -476,6 +476,17 @@ def lgb_model(X_train, X_test, **params):
         result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40).plot.barh()
         plt.show()
 
+    return prediction
+
+
+def generate_submition(prediction, X_test, **params):
+    """
+    生成集过
+    :param prediction:
+    :param X_test:
+    :param params:
+    :return:
+    """
     sub = pd.DataFrame(data=X_test['ID'].astype(int), columns=['ID'])
 
     result = []
@@ -496,10 +507,9 @@ def lgb_model(X_train, X_test, **params):
     # inplace = True，使 df生效
     sub.sort_values('ID', inplace=True)
 
-    sub.to_csv(path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_submit.csv',
+    sub.to_csv(path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_after_submit.csv',
                index=False, encoding='utf-8')
     return sub
 
-#
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()

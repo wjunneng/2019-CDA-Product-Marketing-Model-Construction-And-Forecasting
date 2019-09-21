@@ -18,8 +18,12 @@ def main():
     print('\n加载数据 耗时： %s \n' % str(time.clock() - start))
 
     # 获取验证集数据
-    lgb_model(df_training, df_test)
+    prediction = lgb_model(df_training, df_test)
     print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
+
+    # 生成提交结果
+    generate_submition(prediction, df_test)
+    print('\n生成提交结果 耗时： %s \n' % str(time.clock() - start))
 
 
 if __name__ == '__main__':
