@@ -36,5 +36,6 @@ class DefaultConfig(object):
     xgb_feature_cache_path = project_path + '/data/cache/xgb_feature.h5'
     cat_feature_cache_path = project_path + '/data/cache/cat_feature.h5'
 
-
-
+    # 类别特征
+    categorical_columns = ["'User area'", "gender", "'Cumulative using time'", "'Product service usage'",
+                           "'Pay a monthly fee by credit card'", "'Active user'"]

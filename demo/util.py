@@ -234,6 +234,22 @@ def get_validation_data(df_training, df_test, type='after', **params):
     return df_training, df_validation, df_test
 
 
+def one_hot_encoder(df, categorical_columns, nan_as_category=True):
+    """
+    ont hot 编码
+    :param df:
+    :param nan_as_category:
+    :return:
+    """
+    import numpy as np
+
+    df.replace('?', np.nan, inplace=True)
+    original_columns = list(df.columns)
+    df = pd.get_dummies(df, columns=categorical_columns, dummy_na=nan_as_category)
+    new_columns = [c for c in df.columns if c not in original_columns]
+    return df, new_columns
+
+
 def preprocess(save=True, **params):
     """
     数据预处理
@@ -257,41 +273,53 @@ def preprocess(save=True, **params):
         df_test = deal_Product_using_score(df_test)
         df_training = deal_Product_using_score(df_training)
 
-        # 二、处理User_area     用户地区
-        df_test = deal_User_area(df_test)
-        df_training = deal_User_area(df_training)
+        # # 二、处理User_area     用户地区
+        # df_test = deal_User_area(df_test)
+        # df_training = deal_User_area(df_training)
 
-        # 三、处理gender    性别
-        df_test = deal_gender(df_test)
-        df_training = deal_gender(df_training)
+        # # 三、处理gender    性别
+        # df_test = deal_gender(df_test)
+        # df_training = deal_gender(df_training)
 
         # 四、处理age  年龄
         df_test = deal_age(df_test)
         df_training = deal_age(df_training)
 
-        # 五、处理Cumulative_using_time     使用累计时间
-        df_test = deal_Cumulative_using_time(df_test)
-        df_training = deal_Cumulative_using_time(df_training)
+        # # 五、处理Cumulative_using_time     使用累计时间
+        # df_test = deal_Cumulative_using_time(df_test)
+        # df_training = deal_Cumulative_using_time(df_training)
 
         # 六、处理Point_balance     点数余额
         df_test = deal_Point_balance(df_test)
         df_training = deal_Point_balance(df_training)
 
-        # 七、处理Product_service_usage 产品服务实用量
-        df_test = deal_Product_service_usage(df_test)
-        df_training = deal_Product_service_usage(df_training)
+        # # 七、处理Product_service_usage 产品服务实用量
+        # df_test = deal_Product_service_usage(df_test)
+        # df_training = deal_Product_service_usage(df_training)
 
-        # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
-        df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
-        df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
+        # # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
+        # df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
+        # df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
 
-        # 九、处理Active_user   是否为活跃用户
-        df_test = deal_Active_user(df_test)
-        df_training = deal_Active_user(df_training)
+        # # 九、处理Active_user   是否为活跃用户
+        # df_test = deal_Active_user(df_test)
+        # df_training = deal_Active_user(df_training)
 
         # 十、处理Estimated_salary  估计薪资
         df_test = deal_Estimated_salary(df_test)
         df_training = deal_Estimated_salary(df_training)
+
+        df = pd.concat([df_training, df_test], axis=0, ignore_index=True)
+        df, new_columns = one_hot_encoder(df, categorical_columns=DefaultConfig.categorical_columns)
+        print('before: (%d, %d)' % (df_training.shape[0], df_test.shape[0]))
+        print('before: (%d)' % (len(df_training.columns)))
+        count = df_training.shape[0]
+        print('count', count)
+        df_training = df.loc[:count - 1, :]
+        df_test = df.loc[count:, :]
+        df_test.reset_index(inplace=True, drop=True)
+        print('after: (%d, %d)' % (df_training.shape[0], df_test.shape[0]))
+        print('after: (%d)' % (len(df_training.columns)))
 
         if save:
             df_training.to_hdf(path_or_buf=df_training_path, key='df_training')
@@ -355,12 +383,12 @@ def lgb_model(X_train, X_test, **params):
     import matplotlib.pyplot as plt
 
     def lgb_f1_score(y_hat, data):
-        y_true = data.get_label()
+        y_true = list(data.get_label())
         y_hat = np.round(y_hat)
         return 'f1', f1_score(y_true, y_hat), True
 
     # y_train
-    y_train = X_train.loc[:, DefaultConfig.label_column]
+    y_train = list(X_train.loc[:, DefaultConfig.label_column])
     # 特征重要性
     feature_importance = None
     # 线下验证
@@ -415,7 +443,7 @@ def lgb_model(X_train, X_test, **params):
         # 存放特征重要性
         feature_importance_df = pd.DataFrame()
         # splits_type
-        splits_type = ['after']
+        splits_type = ['before']
         for index, value in enumerate(splits_type):
             print('第 ' + str(index) + ' 折')
 
@@ -507,8 +535,9 @@ def generate_submition(prediction, X_test, **params):
     # inplace = True，使 df生效
     sub.sort_values('ID', inplace=True)
 
-    sub.to_csv(path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_after_submit.csv',
-               index=False, encoding='utf-8')
+    sub.to_csv(
+        path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_before_submit.csv',
+        index=False, encoding='utf-8')
     return sub
 
 # if __name__ == '__main__':
