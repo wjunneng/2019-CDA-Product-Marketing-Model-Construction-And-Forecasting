@@ -22,8 +22,8 @@ class DefaultConfig(object):
     df_training_path = project_path + '/data/original/df_training.csv'
 
     # select_model
-    # select_model = 'lgb'
-    select_model = 'cbt'
+    select_model = 'lgb'
+    # select_model = 'cbt'
 
     # label_column
     label_column = "'Purchase or not'"

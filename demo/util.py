@@ -92,8 +92,6 @@ def deal_age(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    import numpy as np
-
     # 均值填充
     df["age"] = df["age"].astype(float)
     df["age"].fillna(df["age"].mean(), inplace=True)
@@ -251,6 +249,64 @@ def add_virtual_features(df, **params):
     return df
 
 
+def KNN_missing_value(df, **params):
+    """
+    KNN算法可用于在多维空间中将点与其最近的k个邻居进行匹配。 它可以用于连续, 离散, 序数和分类的数据, 这对处理所有类型的缺失数据特别有用。
+    使用KNN作为缺失值的假设是, 基于其他变量, 点值可以近似于与其最接近的点的值。
+    :param df:
+    :param params:
+    :return:
+    """
+    import numpy as np
+    from ycimpute.imputer import knnimput
+
+    label_feature = df[DefaultConfig.label_column]
+    del df[DefaultConfig.label_column]
+
+    df['gender'] = df['gender'].apply(lambda x: 0 if x == "Male" else x)
+    df['gender'] = df['gender'].apply(lambda x: 1 if x == "Female" else x)
+
+    df["'User area'"] = df["'User area'"].apply(lambda x: 1 if x == "Taipei" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 3 if x == "Tainan" else x)
+
+    df.replace('?', np.nan, inplace=True)
+    df = df.astype(np.float)
+    values = knnimput.KNN(k=16).complete(df.values)
+    df = pd.DataFrame(data=values, index=None, columns=df.columns)
+    df[DefaultConfig.label_column] = label_feature
+    return df
+
+
+def Mice_missing_value(df, **params):
+    """
+    算法基于线性回归。mice能填充如连续型,二值型,离散型等混
+    合数据并保持数据一致性
+    :param df:
+    :param params:
+    :return:
+    """
+    import numpy as np
+    from ycimpute.imputer import mice
+
+    label_feature = df[DefaultConfig.label_column]
+    del df[DefaultConfig.label_column]
+
+    df['gender'] = df['gender'].apply(lambda x: 0 if x == "Male" else x)
+    df['gender'] = df['gender'].apply(lambda x: 1 if x == "Female" else x)
+
+    df["'User area'"] = df["'User area'"].apply(lambda x: 1 if x == "Taipei" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 3 if x == "Tainan" else x)
+
+    df.replace('?', np.nan, inplace=True)
+    df = df.astype(np.float)
+    values = mice.MICE().complete(df.values)
+    df = pd.DataFrame(data=values, index=None, columns=df.columns)
+    df[DefaultConfig.label_column] = label_feature
+    return df
+
+
 def preprocess(save=True, **params):
     """
     数据预处理
@@ -270,49 +326,64 @@ def preprocess(save=True, **params):
         df_test, _ = get_df_test()
         df_training = get_df_training()
 
+        # ################################################ 添加虚拟变量
         # 添加虚拟变量
-        df_training = add_virtual_features(df_training)
-        df_test = add_virtual_features(df_test)
+        # df_training = add_virtual_features(df_training)
+        # df_test = add_virtual_features(df_test)
 
-        # 一、处理Product_using_score   产品使用分数
-        df_test = deal_Product_using_score(df_test)
-        df_training = deal_Product_using_score(df_training)
+        # ################################################# 常规处理
+        # # 一、处理Product_using_score   产品使用分数
+        # df_test = deal_Product_using_score(df_test)
+        # df_training = deal_Product_using_score(df_training)
+        #
+        # # 二、处理User_area     用户地区
+        # df_test = deal_User_area(df_test)
+        # df_training = deal_User_area(df_training)
+        #
+        # # 三、处理gender    性别
+        # df_test = deal_gender(df_test)
+        # df_training = deal_gender(df_training)
+        #
+        # # 四、处理age  年龄
+        # df_test = deal_age(df_test)
+        # df_training = deal_age(df_training)
+        #
+        # # 五、处理Cumulative_using_time     使用累计时间
+        # df_test = deal_Cumulative_using_time(df_test)
+        # df_training = deal_Cumulative_using_time(df_training)
+        #
+        # # 六、处理Point_balance     点数余额
+        # df_test = deal_Point_balance(df_test)
+        # df_training = deal_Point_balance(df_training)
+        #
+        # # 七、处理Product_service_usage 产品服务实用量
+        # df_test = deal_Product_service_usage(df_test)
+        # df_training = deal_Product_service_usage(df_training)
+        #
+        # # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
+        # df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
+        # df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
+        #
+        # # 九、处理Active_user   是否为活跃用户
+        # df_test = deal_Active_user(df_test)
+        # df_training = deal_Active_user(df_training)
+        #
+        # # 十、处理Estimated_salary  估计薪资
+        # df_test = deal_Estimated_salary(df_test)
+        # df_training = deal_Estimated_salary(df_training)
 
-        # 二、处理User_area     用户地区
-        df_test = deal_User_area(df_test)
-        df_training = deal_User_area(df_training)
+        # ################################################################
+        df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
 
-        # 三、处理gender    性别
-        df_test = deal_gender(df_test)
-        df_training = deal_gender(df_training)
+        # ################################################################ KNN
+        # df = KNN_missing_value(df)
+        # ################################################################ MICE
+        df = Mice_missing_value(df)
 
-        # 四、处理age  年龄
-        df_test = deal_age(df_test)
-        df_training = deal_age(df_training)
-
-        # 五、处理Cumulative_using_time     使用累计时间
-        df_test = deal_Cumulative_using_time(df_test)
-        df_training = deal_Cumulative_using_time(df_training)
-
-        # 六、处理Point_balance     点数余额
-        df_test = deal_Point_balance(df_test)
-        df_training = deal_Point_balance(df_training)
-
-        # 七、处理Product_service_usage 产品服务实用量
-        df_test = deal_Product_service_usage(df_test)
-        df_training = deal_Product_service_usage(df_training)
-
-        # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
-        df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
-        df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
-
-        # 九、处理Active_user   是否为活跃用户
-        df_test = deal_Active_user(df_test)
-        df_training = deal_Active_user(df_training)
-
-        # 十、处理Estimated_salary  估计薪资
-        df_test = deal_Estimated_salary(df_test)
-        df_training = deal_Estimated_salary(df_training)
+        count = df_training.shape[0]
+        df_training = df.loc[:count - 1, :]
+        df_test = df.loc[count:, :]
+        df_test.reset_index(inplace=True, drop=True)
 
         # 效果不好待优化
         # df = pd.concat([df_training, df_test], axis=0, ignore_index=True)
@@ -569,9 +640,8 @@ def cbt_model(X_train, X_test, validation_type, **params):
                                                df_validation.loc[:, DefaultConfig.label_column]
 
             gc.collect()
-            bst = cbt.CatBoostClassifier(iterations=3000, learning_rate=0.01, verbose=300, early_stopping_rounds=2019,
-                                         task_type='GPU', use_best_model=True,
-                                         cat_features=DefaultConfig.categorical_columns, custom_metric='F1',
+            bst = cbt.CatBoostClassifier(iterations=3000, learning_rate=0.005, verbose=300, early_stopping_rounds=1666,
+                                         task_type='GPU', use_best_model=True, custom_metric='F1',
                                          eval_metric='F1')
             bst.fit(train_x, train_y,
                     eval_set=(test_x, test_y))
@@ -645,7 +715,7 @@ def generate_submition(prediction, X_test, validation_type, submit_or_not=True, 
     if submit_or_not:
         result = []
         for i in prediction:
-            if i >= 0.5 - 0.0 * np.var(np.array(prediction)):
+            if i >= 0.5 + 0.0 * np.var(np.array(prediction)):
                 result.append(1)
             else:
                 result.append(0)
