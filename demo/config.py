@@ -42,9 +42,17 @@ class DefaultConfig(object):
                            "'Pay a monthly fee by credit card'", "'Active user'"]
 
     if select_model is 'lgb':
-        columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'", "gender",
-                   "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
-                   "'Cumulative using time'", "'Purchase or not'"]
+        # mean/mode
+        # columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'",
+        #            "gender",
+        #            "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
+        #            "'Cumulative using time'", "'Purchase or not'"]
+
+        # EM
+        columns = ["age", "'Product using score'", "ID", "' Estimated salary'", "'Point balance'",
+                   "'Cumulative using time'",
+                   "'User area'", "'Product service usage'", "'Active user'", "'Pay a monthly fee by credit card'",
+                   "gender", "'Purchase or not'"]
 
         # columns = ["ID", "'Point balance'", "'Product using score'", "' Estimated salary'", "age",
         #            "'Cumulative using time'", "'User area'", "gender", "'Product service usage'", "'Active user'",

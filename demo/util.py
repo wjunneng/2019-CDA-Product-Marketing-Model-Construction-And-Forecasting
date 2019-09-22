@@ -334,6 +334,32 @@ def IterForest_missing_value(df, **params):
     return df
 
 
+def EM_missing_value(df, **params):
+    """
+    EM基于高斯分布能处理混合数据,但在连续型数据上表现的相对较好。在多种数
+    据缺失机制下,EM相对于其他方法有着较好的表现。
+    """
+    import numpy as np
+    from ycimpute.imputer import EM
+
+    label_feature = df[DefaultConfig.label_column]
+    del df[DefaultConfig.label_column]
+
+    df['gender'] = df['gender'].apply(lambda x: 0 if x == "Male" else x)
+    df['gender'] = df['gender'].apply(lambda x: 1 if x == "Female" else x)
+
+    df["'User area'"] = df["'User area'"].apply(lambda x: 1 if x == "Taipei" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 3 if x == "Tainan" else x)
+
+    df.replace('?', np.nan, inplace=True)
+    df = df.astype(np.float)
+    values = EM().complete(df.values)
+    df = pd.DataFrame(data=values, index=None, columns=df.columns)
+    df[DefaultConfig.label_column] = label_feature
+    return df
+
+
 def preprocess(save=True, **params):
     """
     数据预处理
@@ -407,7 +433,9 @@ def preprocess(save=True, **params):
         # ################################################################ MICE
         # df = Mice_missing_value(df)
         # ################################################################ IterForest
-        df = IterForest_missing_value(df)
+        # df = IterForest_missing_value(df)
+        # ################################################################ EM
+        df = EM_missing_value(df)
 
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
