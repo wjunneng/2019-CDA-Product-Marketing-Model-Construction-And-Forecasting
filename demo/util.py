@@ -45,7 +45,6 @@ def deal_Product_using_score(df: pd.DataFrame, **params) -> pd.DataFrame:
     import numpy as np
 
     # 均值填充
-    df["'Product using score'"] = df["'Product using score'"].apply(lambda x: np.nan if x == '?' else x)
     df["'Product using score'"] = df["'Product using score'"].astype(float)
     df["'Product using score'"].fillna(df["'Product using score'"].mean(), inplace=True)
     df["'Product using score'"] = df["'Product using score'"].astype(int)
@@ -60,7 +59,9 @@ def deal_User_area(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    df["'User area'"] = df["'User area'"].apply(lambda x: 0 if x == "?" else x)
+    import numpy as np
+
+    df["'User area'"] = df["'User area'"].apply(lambda x: 0 if x is np.nan else x)
     df["'User area'"] = df["'User area'"].apply(lambda x: 1 if x == "Taipei" else x)
     df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
     df["'User area'"] = df["'User area'"].apply(lambda x: 3 if x == "Tainan" else x)
@@ -75,7 +76,9 @@ def deal_gender(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    df['gender'] = df['gender'].apply(lambda x: 0 if x == "?" else x)
+    import numpy as np
+
+    df['gender'] = df['gender'].apply(lambda x: 0 if x is np.nan else x)
     df['gender'] = df['gender'].apply(lambda x: 1 if x == "Male" else x)
     df['gender'] = df['gender'].apply(lambda x: 2 if x == "Female" else x)
 
@@ -92,7 +95,6 @@ def deal_age(df: pd.DataFrame, **params) -> pd.DataFrame:
     import numpy as np
 
     # 均值填充
-    df["age"] = df["age"].apply(lambda x: np.nan if x == '?' else x)
     df["age"] = df["age"].astype(float)
     df["age"].fillna(df["age"].mean(), inplace=True)
     df["age"] = df["age"].astype(int)
@@ -107,10 +109,7 @@ def deal_Cumulative_using_time(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    import numpy as np
-
     # 众数填充
-    df["'Cumulative using time'"] = df["'Cumulative using time'"].apply(lambda x: np.nan if x == '?' else x)
     df["'Cumulative using time'"] = df["'Cumulative using time'"].astype(float)
     df["'Cumulative using time'"].fillna(df["'Cumulative using time'"].mode()[0], inplace=True)
     df["'Cumulative using time'"] = df["'Cumulative using time'"].astype(int)
@@ -125,10 +124,7 @@ def deal_Point_balance(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    import numpy as np
-
     # 均值填充
-    df["'Point balance'"] = df["'Point balance'"].apply(lambda x: np.nan if x == '?' else x)
     df["'Point balance'"] = df["'Point balance'"].astype(float)
     df["'Point balance'"].fillna(df["'Point balance'"].mean(), inplace=True)
 
@@ -142,10 +138,7 @@ def deal_Product_service_usage(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    import numpy as np
-
     # 众数填充
-    df["'Product service usage'"] = df["'Product service usage'"].apply(lambda x: np.nan if x == '?' else x)
     df["'Product service usage'"] = df["'Product service usage'"].astype(float)
     df["'Product service usage'"].fillna(df["'Product service usage'"].mode()[0], inplace=True)
     df["'Product service usage'"] = df["'Product service usage'"].astype(int)
@@ -160,11 +153,7 @@ def deal_Pay_a_monthly_fee_by_credit_card(df: pd.DataFrame, **params) -> pd.Data
     :param params:
     :return:
     """
-    import numpy as np
-
     # 众数填充
-    df["'Pay a monthly fee by credit card'"] = df["'Pay a monthly fee by credit card'"].apply(
-        lambda x: np.nan if x == '?' else x)
     df["'Pay a monthly fee by credit card'"] = df["'Pay a monthly fee by credit card'"].astype(float)
     df["'Pay a monthly fee by credit card'"].fillna(df["'Pay a monthly fee by credit card'"].mode()[0], inplace=True)
     df["'Pay a monthly fee by credit card'"] = df["'Pay a monthly fee by credit card'"].astype(int)
@@ -179,10 +168,7 @@ def deal_Active_user(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    import numpy as np
-
     # 众数填充
-    df["'Active user'"] = df["'Active user'"].apply(lambda x: np.nan if x == '?' else x)
     df["'Active user'"] = df["'Active user'"].astype(float)
     df["'Active user'"].fillna(df["'Active user'"].mode()[0], inplace=True)
     df["'Active user'"] = df["'Active user'"].astype(int)
@@ -197,10 +183,7 @@ def deal_Estimated_salary(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
-    import numpy as np
-
     # 均值填充
-    df["' Estimated salary'"] = df["' Estimated salary'"].apply(lambda x: np.nan if x == '?' else x)
     df["' Estimated salary'"] = df["' Estimated salary'"].astype(float)
     df["' Estimated salary'"].fillna(df["' Estimated salary'"].mean(), inplace=True)
 
@@ -241,13 +224,31 @@ def one_hot_encoder(df, categorical_columns, nan_as_category=True):
     :param nan_as_category:
     :return:
     """
-    import numpy as np
-
-    df.replace('?', np.nan, inplace=True)
     original_columns = list(df.columns)
     df = pd.get_dummies(df, columns=categorical_columns, dummy_na=nan_as_category)
     new_columns = [c for c in df.columns if c not in original_columns]
     return df, new_columns
+
+
+def add_virtual_features(df, **params):
+    """
+    添加虚拟变量
+    :param df:
+    :param params:
+    :return:
+    """
+    import numpy as np
+
+    df.replace('?', np.nan, inplace=True)
+
+    for column in list(DefaultConfig.columns):
+        if column in list(df.columns) and df[column].isnull().sum() != 0:
+            tmp = column + ' Virtual'
+            df[tmp] = df[column].copy()
+            df.loc[(df[tmp].notnull()), tmp] = 0
+            df.loc[(df[tmp].isnull()), tmp] = 1
+
+    return df
 
 
 def preprocess(save=True, **params):
@@ -268,6 +269,10 @@ def preprocess(save=True, **params):
         # 获取原数据
         df_test, _ = get_df_test()
         df_training = get_df_training()
+
+        # 添加虚拟变量
+        df_training = add_virtual_features(df_training)
+        df_test = add_virtual_features(df_test)
 
         # 一、处理Product_using_score   产品使用分数
         df_test = deal_Product_using_score(df_test)
@@ -512,6 +517,116 @@ def lgb_model(X_train, X_test, validation_type, **params):
     return prediction
 
 
+def cbt_model(X_train, X_test, validation_type, **params):
+    """
+    cbt 模型
+    :param new_train:
+    :param y:
+    :param new_test:
+    :param columns:
+    :param params:
+    :return:
+    """
+    import gc
+    import numpy as np
+
+    import pandas as pd
+    import catboost as cbt
+    from sklearn.metrics import log_loss, roc_auc_score, f1_score
+    import matplotlib.pyplot as plt
+
+    # y_train
+    y_train = list(X_train.loc[:, DefaultConfig.label_column])
+    # 特征重要性
+    feature_importance = None
+    # 线下验证
+    oof = np.zeros((X_train.shape[0]))
+    # 线上结论
+    prediction = np.zeros((X_test.shape[0]))
+
+    seeds = [42, 2019, 223344, 2019 * 2 + 1024, 332232111]
+    num_model_seed = 1
+
+    print(DefaultConfig.select_model + ' start training...')
+
+    for model_seed in range(num_model_seed):
+        print('模型 ', model_seed + 1, ' 开始训练')
+        oof_lgb = np.zeros((X_train.shape[0]))
+        prediction_lgb = np.zeros((X_test.shape[0]))
+
+        # 存放特征重要性
+        feature_importance_df = pd.DataFrame()
+        for index, value in enumerate(validation_type):
+            print('第 ' + str(index) + ' 折')
+
+            # 获取验证集
+            df_training, df_validation, df_test = get_validation_data(df_training=X_train, df_test=X_test, type=value)
+
+            # 分割
+            train_x, test_x, train_y, test_y = df_training.drop(labels=DefaultConfig.label_column, axis=1), \
+                                               df_validation.drop(labels=DefaultConfig.label_column, axis=1), \
+                                               df_training.loc[:, DefaultConfig.label_column], \
+                                               df_validation.loc[:, DefaultConfig.label_column]
+
+            gc.collect()
+            bst = cbt.CatBoostClassifier(iterations=3000, learning_rate=0.01, verbose=300, early_stopping_rounds=2019,
+                                         task_type='GPU', use_best_model=True,
+                                         cat_features=DefaultConfig.categorical_columns, custom_metric='F1',
+                                         eval_metric='F1')
+            bst.fit(train_x, train_y,
+                    eval_set=(test_x, test_y))
+
+            oof_lgb[test_x.index] += bst.predict_proba(test_x)[:, 1]
+            prediction_lgb += bst.predict_proba(X_test.drop(DefaultConfig.label_column, axis=1))[:, 1] / len(
+                validation_type)
+            gc.collect()
+
+            fold_importance_df = pd.DataFrame()
+            fold_importance_df["feature"] = list(test_x.columns)
+            fold_importance_df["importance"] = bst.get_feature_importance()
+            fold_importance_df["fold"] = index + 1
+            feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
+
+        oof += oof_lgb / num_model_seed
+        prediction += prediction_lgb / num_model_seed
+        print('logloss', log_loss(pd.get_dummies(y_train).values, oof_lgb))
+        # 线下auc评分
+        print('the roc_auc_score for train:', roc_auc_score(y_train, oof_lgb))
+
+        if feature_importance is None:
+            feature_importance = feature_importance_df
+        else:
+            feature_importance += feature_importance_df
+
+    feature_importance['importance'] /= num_model_seed
+    print('logloss', log_loss(pd.get_dummies(y_train).values, oof))
+    print('ac', roc_auc_score(y_train, oof))
+
+    if feature_importance is not None:
+        feature_importance.to_hdf(path_or_buf=DefaultConfig.lgb_feature_cache_path, key='lgb')
+        # 读取feature_importance_df
+        feature_importance_df = reduce_mem_usage(
+            pd.read_hdf(path_or_buf=DefaultConfig.lgb_feature_cache_path, key='lgb', mode='r'))
+
+        plt.figure(figsize=(8, 8))
+        # 按照flod分组
+        group = feature_importance_df.groupby(by=['fold'])
+
+        result = []
+        for key, value in group:
+            value = value[['feature', 'importance']]
+
+            result.append(value)
+
+        result = pd.concat(result)
+        print(result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40))
+        # 5折数据取平均值
+        result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40).plot.barh()
+        plt.show()
+
+    return prediction
+
+
 def generate_submition(prediction, X_test, validation_type, submit_or_not=True, **params):
     """
     生成集过
@@ -530,7 +645,7 @@ def generate_submition(prediction, X_test, validation_type, submit_or_not=True, 
     if submit_or_not:
         result = []
         for i in prediction:
-            if i >= 0.5 - 0.5*np.var(np.array(prediction)):
+            if i >= 0.5 - 0.0 * np.var(np.array(prediction)):
                 result.append(1)
             else:
                 result.append(0)
@@ -570,21 +685,38 @@ def merge(**params):
     :param params:
     :return:
     """
-    before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-    after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
+    # before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+    # after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
+    #
+    # before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
+    #
+    # result = []
+    # for i in list(before['Predicted_Results']):
+    #     if i >= 0.5:
+    #         result.append(1)
+    #     else:
+    #         result.append(0)
+    #
+    # before['Predicted_Results'] = result
+    #
+    # before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
 
-    before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
+    lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+    cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
+
+    lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
 
     result = []
-    for i in list(before['Predicted_Results']):
+    for i in list(lgb_before['Predicted_Results']):
         if i >= 0.5:
             result.append(1)
         else:
             result.append(0)
 
-    before['Predicted_Results'] = result
+    print('sum(1): ', sum(result))
+    lgb_before['Predicted_Results'] = result
 
-    before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
+    lgb_before.to_csv(path_or_buf=DefaultConfig.lgb_cbt_submit, index=False, encoding='utf-8')
 
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()

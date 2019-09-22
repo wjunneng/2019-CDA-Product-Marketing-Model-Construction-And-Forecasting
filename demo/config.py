@@ -22,7 +22,8 @@ class DefaultConfig(object):
     df_training_path = project_path + '/data/original/df_training.csv'
 
     # select_model
-    select_model = 'lgb'
+    # select_model = 'lgb'
+    select_model = 'cbt'
 
     # label_column
     label_column = "'Purchase or not'"
@@ -40,13 +41,42 @@ class DefaultConfig(object):
     categorical_columns = ["'User area'", "gender", "'Cumulative using time'", "'Product service usage'",
                            "'Pay a monthly fee by credit card'", "'Active user'"]
 
-    columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'", "gender",
-               "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
-               "'Cumulative using time'", "'Purchase or not'"]
+    if select_model is 'lgb':
+        columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'", "gender",
+                   "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
+                   "'Cumulative using time'", "'Purchase or not'"]
+
+        # columns = ["ID", "'Point balance'", "'Product using score'", "' Estimated salary'", "age",
+        #            "'Cumulative using time'", "'User area'", "gender", "'Product service usage'", "'Active user'",
+        #            "'Product service usage' Virtual", "'Active user' Virtual", "' Estimated salary' Virtual",
+        #            "'Cumulative using time' Virtual", "age Virtual", "'Pay a monthly fee by credit card' Virtual",
+        #            "'Point balance' Virtual", "'Product using score' Virtual", "'Pay a monthly fee by credit card'",
+        #            "'User area' Virtual", "gender Virtual", "'Purchase or not'"]
+
+    elif select_model is 'cbt':
+        columns = ["age",
+                   "'Product service usage'",
+                   "'Point balance'",
+                   "'User area'",
+                   "gender",
+                   "' Estimated salary'",
+                   "'Cumulative using time'",
+                   "'Active user'",
+                   "ID",
+                   "'Product using score'",
+                   "'Pay a monthly fee by credit card'",
+                   "'Purchase or not'"]
 
     # lgb before submit
     lgb_before_submit = project_path + '/data/submit/lgb_before_submit.csv'
     # lgb after submit
     lgb_after_submit = project_path + '/data/submit/lgb_after_submit.csv'
+    # cbt before submit
+    cbt_before_submit = project_path + '/data/submit/cbt_before_submit.csv'
+    # cbt after submit
+    cbt_after_submit = project_path + '/data/submit/cbt_after_submit.csv'
+
     # lgb submit
     lgb_submit = project_path + '/data/submit/lgb_submit.csv'
+    # lgb_cbt_submit
+    lgb_cbt_submit = project_path + '/data/submit/lgb_cbt_submit.csv'
