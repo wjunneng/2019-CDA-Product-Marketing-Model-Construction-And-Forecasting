@@ -307,6 +307,33 @@ def Mice_missing_value(df, **params):
     return df
 
 
+def IterForest_missing_value(df, **params):
+    """
+    是基于随机森林的一种算法,能够很好的填充连续
+    型,离散型相混合的缺失数据。尤其对于各变量之间出存在相关
+    性的数据集表现不错
+    """
+    import numpy as np
+    from ycimpute.imputer import iterforest
+
+    label_feature = df[DefaultConfig.label_column]
+    del df[DefaultConfig.label_column]
+
+    df['gender'] = df['gender'].apply(lambda x: 0 if x == "Male" else x)
+    df['gender'] = df['gender'].apply(lambda x: 1 if x == "Female" else x)
+
+    df["'User area'"] = df["'User area'"].apply(lambda x: 1 if x == "Taipei" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
+    df["'User area'"] = df["'User area'"].apply(lambda x: 3 if x == "Tainan" else x)
+
+    df.replace('?', np.nan, inplace=True)
+    df = df.astype(np.float)
+    values = iterforest.IterImput().complete(df.values)
+    df = pd.DataFrame(data=values, index=None, columns=df.columns)
+    df[DefaultConfig.label_column] = label_feature
+    return df
+
+
 def preprocess(save=True, **params):
     """
     数据预处理
@@ -378,7 +405,9 @@ def preprocess(save=True, **params):
         # ################################################################ KNN
         # df = KNN_missing_value(df)
         # ################################################################ MICE
-        df = Mice_missing_value(df)
+        # df = Mice_missing_value(df)
+        # ################################################################ IterForest
+        df = IterForest_missing_value(df)
 
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
