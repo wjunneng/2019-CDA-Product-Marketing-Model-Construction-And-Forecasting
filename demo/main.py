@@ -18,6 +18,7 @@ def main():
     df_training, df_test = preprocess()
     print('\n加载数据 耗时： %s \n' % str(time.clock() - start))
 
+    print(list(df_training.columns))
     df_training = df_training[DefaultConfig.columns]
     df_test = df_test[DefaultConfig.columns]
 

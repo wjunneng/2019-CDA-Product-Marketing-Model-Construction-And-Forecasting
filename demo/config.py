@@ -48,10 +48,10 @@ class DefaultConfig(object):
 
     if select_model is 'lgb':
         # mean/mode
-        columns = ["ID", "'Product using score'", "age", "'User area'",
-                   "gender",
-                   "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
-                   "'Cumulative using time'", "'Purchase or not'"]
+        columns = ["ID", "' Estimated salary'_groupby_age_mean_ratio", "' Estimated salary'", "'Product using score'",
+                   "'Point balance'", "age",
+                   "'Cumulative using time'", "'User area'", "gender", "'Product service usage'", "'Active user'",
+                   "'Pay a monthly fee by credit card'", "'Purchase or not'"]
 
         # IterForest
         # columns = ["ID", "' Estimated salary'", "'Point balance'", "'Product using score'", "age",

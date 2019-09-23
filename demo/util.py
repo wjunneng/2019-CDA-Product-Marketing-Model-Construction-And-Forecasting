@@ -456,8 +456,8 @@ def preprocess(save=True, **params):
         df_training = deal_Cumulative_using_time(df_training)
 
         # # 六、处理Point_balance     点数余额
-        # df_test = deal_Point_balance(df_test)
-        # df_training = deal_Point_balance(df_training)
+        df_test = deal_Point_balance(df_test)
+        df_training = deal_Point_balance(df_training)
 
         # 七、处理Product_service_usage 产品服务实用量
         df_test = deal_Product_service_usage(df_test)
@@ -472,8 +472,8 @@ def preprocess(save=True, **params):
         df_training = deal_Active_user(df_training)
 
         # # 十、处理Estimated_salary  估计薪资
-        # df_test = deal_Estimated_salary(df_test)
-        # df_training = deal_Estimated_salary(df_training)
+        df_test = deal_Estimated_salary(df_test)
+        df_training = deal_Estimated_salary(df_training)
 
         # ##############################################################################################################
         df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
@@ -485,18 +485,27 @@ def preprocess(save=True, **params):
         # ################################################################ IterForest
         # df = IterForest_missing_value(df)
         # ################################################################ EM
-        df = EM_missing_value(df)
+        # df = EM_missing_value(df)
 
         # ########################################### 要进行yeo-johnson变换的特征列
-        print('进行yeo-johnson变换的特征列：')
-        print(DefaultConfig.float_columns)
-        pt = preprocessing.PowerTransformer(method='yeo-johnson', standardize=True)
-        df[DefaultConfig.float_columns] = pt.fit_transform(df[DefaultConfig.float_columns])
+        # print('进行yeo-johnson变换的特征列：')
+        # print(DefaultConfig.float_columns)
+        # pt = preprocessing.PowerTransformer(method='yeo-johnson', standardize=True)
+        # df[DefaultConfig.float_columns] = pt.fit_transform(df[DefaultConfig.float_columns])
+        #
+        # # 整数变量需要转化为整数
+        # df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
 
-        # 整数变量需要转化为整数
-        df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
+        # 3.数值列
+        # 类别列
+        for c_col in ['age']:
+            # 数值列
+            for n_col in ["' Estimated salary'"]:
+                df[n_col + '_groupby_' + c_col + '_mean_ratio'] = df[n_col] / (df[c_col].map(df[n_col].groupby(df[c_col]).mean()))
+
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
+        # df_training[DefaultConfig.label_column] = df_training[DefaultConfig.label_column].astype(int)
         df_test = df.loc[count:, :]
         df_test.reset_index(inplace=True, drop=True)
         # ##############################################################################################################
@@ -595,7 +604,7 @@ def lgb_model(X_train, X_test, validation_type, **params):
     print(DefaultConfig.select_model + ' start training...')
 
     params = {
-        'learning_rate': 0.01,
+        'learning_rate': 0.005,
         'boosting_type': 'gbdt',
         'objective': 'binary',
         'feature_fraction': 0.8,
@@ -606,9 +615,9 @@ def lgb_model(X_train, X_test, validation_type, **params):
         'max_depth': -1
     }
 
-    # 寻找最优的num_leaves
+    # # 寻找最优的num_leaves
     # min_merror = np.inf
-    # for num_leaves in [150, 200, 250, 300, 500, 1000]:
+    # for num_leaves in [50, 100, 150, 200, 250, 300, 500, 1000]:
     #     params["num_leaves"] = num_leaves
     #
     #     cv_results = lgb.cv(params=params,
@@ -618,9 +627,10 @@ def lgb_model(X_train, X_test, validation_type, **params):
     #                         nfold=5,
     #                         verbose_eval=50,
     #                         seed=23,
-    #                         early_stopping_rounds=20)
+    #                         early_stopping_rounds=1500)
     #
-    #     mean_error = min(cv_results['multi_logloss-mean'])
+    #     print(cv_results)
+    #     mean_error = min(cv_results['binary_logloss-mean'])
     #
     #     if mean_error < min_merror:
     #         min_merror = mean_error
