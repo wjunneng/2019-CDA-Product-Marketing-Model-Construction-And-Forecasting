@@ -41,21 +41,36 @@ class DefaultConfig(object):
     categorical_columns = ["'User area'", "gender", "'Cumulative using time'", "'Product service usage'",
                            "'Pay a monthly fee by credit card'", "'Active user'"]
     # 整数特征
-    int_columns = ["'Product using score'", "'User area'", "gender", "age", "'Cumulative using time'",
+    int_columns = ["ID", "'Product using score'", "'User area'", "gender", "age", "'Cumulative using time'",
                    "'Product service usage'", "'Pay a monthly fee by credit card'", "'Active user'"]
+    # 浮点型特征
+    float_columns = ["'Point balance'", "' Estimated salary'"]
 
     if select_model is 'lgb':
         # mean/mode
-        # columns = ["ID", "'Product using score'", "'Point balance'", "' Estimated salary'", "age", "'User area'",
-        #            "gender",
-        #            "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
-        #            "'Cumulative using time'", "'Purchase or not'"]
+        columns = ["ID", "'Product using score'", "age", "'User area'",
+                   "gender",
+                   "'Active user'", "'Product service usage'", "'Pay a monthly fee by credit card'",
+                   "'Cumulative using time'", "'Purchase or not'"]
+
+        # IterForest
+        # columns = ["ID", "' Estimated salary'", "'Point balance'", "'Product using score'", "age",
+        #            "'Cumulative using time'", "'User area'", "'Active user'", "'Product service usage'", "gender",
+        #            "'Pay a monthly fee by credit card'", "'Purchase or not'"]
 
         # EM
-        columns = ["age", "'Product using score'", "ID", "' Estimated salary'", "'Point balance'",
-                   "'Cumulative using time'",
-                   "'User area'", "'Product service usage'", "'Active user'", "'Pay a monthly fee by credit card'",
-                   "gender", "'Purchase or not'"]
+        # columns = ["ID",
+        #            "' Estimated salary'",
+        #            "'Point balance'",
+        #            "'Product using score'",
+        #            "age",
+        #            "'Cumulative using time'",
+        #            "'User area'",
+        #            "gender",
+        #            "'Product service usage'",
+        #            "'Active user'",
+        #            "'Pay a monthly fee by credit card'",
+        #            "'Purchase or not'"]
 
         # columns = ["ID", "'Point balance'", "'Product using score'", "' Estimated salary'", "age",
         #            "'Cumulative using time'", "'User area'", "gender", "'Product service usage'", "'Active user'",

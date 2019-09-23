@@ -45,6 +45,7 @@ def deal_Product_using_score(df: pd.DataFrame, **params) -> pd.DataFrame:
     import numpy as np
 
     # 均值填充
+    df["'Product using score'"].replace('?', np.nan, inplace=True)
     df["'Product using score'"] = df["'Product using score'"].astype(float)
     df["'Product using score'"].fillna(df["'Product using score'"].mean(), inplace=True)
     df["'Product using score'"] = df["'Product using score'"].astype(int)
@@ -61,6 +62,7 @@ def deal_User_area(df: pd.DataFrame, **params) -> pd.DataFrame:
     """
     import numpy as np
 
+    df["'User area'"].replace('?', np.nan, inplace=True)
     df["'User area'"] = df["'User area'"].apply(lambda x: 0 if x is np.nan else x)
     df["'User area'"] = df["'User area'"].apply(lambda x: 1 if x == "Taipei" else x)
     df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
@@ -78,6 +80,7 @@ def deal_gender(df: pd.DataFrame, **params) -> pd.DataFrame:
     """
     import numpy as np
 
+    df['gender'].replace('?', np.nan, inplace=True)
     df['gender'] = df['gender'].apply(lambda x: 0 if x is np.nan else x)
     df['gender'] = df['gender'].apply(lambda x: 1 if x == "Male" else x)
     df['gender'] = df['gender'].apply(lambda x: 2 if x == "Female" else x)
@@ -92,7 +95,10 @@ def deal_age(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
+    import numpy as np
+
     # 均值填充
+    df["age"].replace('?', np.nan, inplace=True)
     df["age"] = df["age"].astype(float)
     df["age"].fillna(df["age"].mean(), inplace=True)
     df["age"] = df["age"].astype(int)
@@ -107,7 +113,10 @@ def deal_Cumulative_using_time(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
+    import numpy as np
+
     # 众数填充
+    df["'Cumulative using time'"].replace('?', np.nan, inplace=True)
     df["'Cumulative using time'"] = df["'Cumulative using time'"].astype(float)
     df["'Cumulative using time'"].fillna(df["'Cumulative using time'"].mode()[0], inplace=True)
     df["'Cumulative using time'"] = df["'Cumulative using time'"].astype(int)
@@ -122,7 +131,10 @@ def deal_Point_balance(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
+    import numpy as np
+
     # 均值填充
+    df["'Point balance'"].replace('?', np.nan, inplace=True)
     df["'Point balance'"] = df["'Point balance'"].astype(float)
     df["'Point balance'"].fillna(df["'Point balance'"].mean(), inplace=True)
 
@@ -136,7 +148,10 @@ def deal_Product_service_usage(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
+    import numpy as np
+
     # 众数填充
+    df["'Product service usage'"].replace('?', np.nan, inplace=True)
     df["'Product service usage'"] = df["'Product service usage'"].astype(float)
     df["'Product service usage'"].fillna(df["'Product service usage'"].mode()[0], inplace=True)
     df["'Product service usage'"] = df["'Product service usage'"].astype(int)
@@ -151,7 +166,10 @@ def deal_Pay_a_monthly_fee_by_credit_card(df: pd.DataFrame, **params) -> pd.Data
     :param params:
     :return:
     """
+    import numpy as np
+
     # 众数填充
+    df["'Pay a monthly fee by credit card'"].replace('?', np.nan, inplace=True)
     df["'Pay a monthly fee by credit card'"] = df["'Pay a monthly fee by credit card'"].astype(float)
     df["'Pay a monthly fee by credit card'"].fillna(df["'Pay a monthly fee by credit card'"].mode()[0], inplace=True)
     df["'Pay a monthly fee by credit card'"] = df["'Pay a monthly fee by credit card'"].astype(int)
@@ -166,7 +184,10 @@ def deal_Active_user(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
+    import numpy as np
+
     # 众数填充
+    df["'Active user'"].replace('?', np.nan, inplace=True)
     df["'Active user'"] = df["'Active user'"].astype(float)
     df["'Active user'"].fillna(df["'Active user'"].mode()[0], inplace=True)
     df["'Active user'"] = df["'Active user'"].astype(int)
@@ -181,7 +202,10 @@ def deal_Estimated_salary(df: pd.DataFrame, **params) -> pd.DataFrame:
     :param params:
     :return:
     """
+    import numpy as np
+
     # 均值填充
+    df["' Estimated salary'"].replace('?', np.nan, inplace=True)
     df["' Estimated salary'"] = df["' Estimated salary'"].astype(float)
     df["' Estimated salary'"].fillna(df["' Estimated salary'"].mean(), inplace=True)
 
@@ -352,12 +376,37 @@ def EM_missing_value(df, **params):
     df["'User area'"] = df["'User area'"].apply(lambda x: 2 if x == "Taichung" else x)
     df["'User area'"] = df["'User area'"].apply(lambda x: 3 if x == "Tainan" else x)
 
+    df["'Point balance'"].replace('0', np.nan, inplace=True)
     df.replace('?', np.nan, inplace=True)
     df = df.astype(np.float)
     values = EM().complete(df.values)
     df = pd.DataFrame(data=values, index=None, columns=df.columns)
     df[DefaultConfig.label_column] = label_feature
     return df
+
+
+def smote(X_train, save=True, **params):
+    """
+    过采样+欠采样
+    :param X_train:
+    :param y_train:
+    :param params:
+    :return:
+    """
+    from collections import Counter
+    from imblearn.over_sampling import SMOTE
+
+    y_train = X_train[DefaultConfig.label_column]
+    del X_train[DefaultConfig.label_column]
+
+    # smote 算法
+    smote = SMOTE(ratio={0: 4200, 1: 1000}, n_jobs=10, kind='svm')
+    train_X, train_y = smote.fit_sample(X_train, y_train)
+    print('Resampled dataset shape %s' % Counter(train_y))
+    X_train = pd.DataFrame(data=train_X, columns=X_train.columns)
+    X_train[DefaultConfig.label_column] = train_y
+
+    return X_train
 
 
 def preprocess(save=True, **params):
@@ -367,6 +416,7 @@ def preprocess(save=True, **params):
     :return:
     """
     import os
+    from sklearn import preprocessing
 
     df_training_path = DefaultConfig.df_training_cache_path
     df_test_path = DefaultConfig.df_test_cache_path
@@ -385,47 +435,47 @@ def preprocess(save=True, **params):
         # df_test = add_virtual_features(df_test)
 
         # ################################################# 常规处理
-        # # 一、处理Product_using_score   产品使用分数
-        # df_test = deal_Product_using_score(df_test)
-        # df_training = deal_Product_using_score(df_training)
-        #
-        # # 二、处理User_area     用户地区
-        # df_test = deal_User_area(df_test)
-        # df_training = deal_User_area(df_training)
-        #
-        # # 三、处理gender    性别
-        # df_test = deal_gender(df_test)
-        # df_training = deal_gender(df_training)
-        #
-        # # 四、处理age  年龄
-        # df_test = deal_age(df_test)
-        # df_training = deal_age(df_training)
-        #
-        # # 五、处理Cumulative_using_time     使用累计时间
-        # df_test = deal_Cumulative_using_time(df_test)
-        # df_training = deal_Cumulative_using_time(df_training)
-        #
+        # 一、处理Product_using_score   产品使用分数
+        df_test = deal_Product_using_score(df_test)
+        df_training = deal_Product_using_score(df_training)
+
+        # 二、处理User_area     用户地区
+        df_test = deal_User_area(df_test)
+        df_training = deal_User_area(df_training)
+
+        # 三、处理gender    性别
+        df_test = deal_gender(df_test)
+        df_training = deal_gender(df_training)
+
+        # 四、处理age  年龄
+        df_test = deal_age(df_test)
+        df_training = deal_age(df_training)
+
+        # 五、处理Cumulative_using_time     使用累计时间
+        df_test = deal_Cumulative_using_time(df_test)
+        df_training = deal_Cumulative_using_time(df_training)
+
         # # 六、处理Point_balance     点数余额
         # df_test = deal_Point_balance(df_test)
         # df_training = deal_Point_balance(df_training)
-        #
-        # # 七、处理Product_service_usage 产品服务实用量
-        # df_test = deal_Product_service_usage(df_test)
-        # df_training = deal_Product_service_usage(df_training)
-        #
-        # # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
-        # df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
-        # df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
-        #
-        # # 九、处理Active_user   是否为活跃用户
-        # df_test = deal_Active_user(df_test)
-        # df_training = deal_Active_user(df_training)
-        #
+
+        # 七、处理Product_service_usage 产品服务实用量
+        df_test = deal_Product_service_usage(df_test)
+        df_training = deal_Product_service_usage(df_training)
+
+        # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
+        df_test = deal_Pay_a_monthly_fee_by_credit_card(df_test)
+        df_training = deal_Pay_a_monthly_fee_by_credit_card(df_training)
+
+        # 九、处理Active_user   是否为活跃用户
+        df_test = deal_Active_user(df_test)
+        df_training = deal_Active_user(df_training)
+
         # # 十、处理Estimated_salary  估计薪资
         # df_test = deal_Estimated_salary(df_test)
         # df_training = deal_Estimated_salary(df_training)
 
-        # ################################################################
+        # ##############################################################################################################
         df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
 
         # ################################################################ KNN
@@ -437,12 +487,19 @@ def preprocess(save=True, **params):
         # ################################################################ EM
         df = EM_missing_value(df)
 
+        # ########################################### 要进行yeo-johnson变换的特征列
+        print('进行yeo-johnson变换的特征列：')
+        print(DefaultConfig.float_columns)
+        pt = preprocessing.PowerTransformer(method='yeo-johnson', standardize=True)
+        df[DefaultConfig.float_columns] = pt.fit_transform(df[DefaultConfig.float_columns])
+
         # 整数变量需要转化为整数
         df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
         df_test = df.loc[count:, :]
         df_test.reset_index(inplace=True, drop=True)
+        # ##############################################################################################################
 
         # 效果不好待优化
         # df = pd.concat([df_training, df_test], axis=0, ignore_index=True)
@@ -583,6 +640,11 @@ def lgb_model(X_train, X_test, validation_type, **params):
 
             # 获取验证集
             df_training, df_validation, df_test = get_validation_data(df_training=X_train, df_test=X_test, type=value)
+            # 0/1数目
+            print(df_training[DefaultConfig.label_column].value_counts())
+            # # 采样
+            # df_training = smote(df_training)
+            # df_training[DefaultConfig.int_columns] = df_training[DefaultConfig.int_columns].astype(int)
 
             # 分割
             train_x, test_x, train_y, test_y = df_training.drop(labels=DefaultConfig.label_column, axis=1), \
