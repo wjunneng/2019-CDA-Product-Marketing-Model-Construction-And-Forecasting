@@ -40,6 +40,9 @@ class DefaultConfig(object):
     # 类别特征
     categorical_columns = ["'User area'", "gender", "'Cumulative using time'", "'Product service usage'",
                            "'Pay a monthly fee by credit card'", "'Active user'"]
+    # 整数特征
+    int_columns = ["'Product using score'", "'User area'", "gender", "age", "'Cumulative using time'",
+                   "'Product service usage'", "'Pay a monthly fee by credit card'", "'Active user'"]
 
     if select_model is 'lgb':
         # mean/mode

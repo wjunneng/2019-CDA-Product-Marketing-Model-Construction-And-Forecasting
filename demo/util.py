@@ -437,6 +437,8 @@ def preprocess(save=True, **params):
         # ################################################################ EM
         df = EM_missing_value(df)
 
+        # 整数变量需要转化为整数
+        df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
         df_test = df.loc[count:, :]
