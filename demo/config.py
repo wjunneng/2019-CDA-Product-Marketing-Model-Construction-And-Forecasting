@@ -22,8 +22,8 @@ class DefaultConfig(object):
     df_training_path = project_path + '/data/original/df_training.csv'
 
     # select_model
-    select_model = 'lgb'
-    # select_model = 'cbt'
+    # select_model = 'lgb'
+    select_model = 'cbt'
 
     # label_column
     label_column = "'Purchase or not'"
@@ -108,3 +108,6 @@ class DefaultConfig(object):
     lgb_submit = project_path + '/data/submit/lgb_submit.csv'
     # lgb_cbt_submit
     lgb_cbt_submit = project_path + '/data/submit/lgb_cbt_submit.csv'
+
+    # merge_type
+    merge_type = 'lgb_cbt'

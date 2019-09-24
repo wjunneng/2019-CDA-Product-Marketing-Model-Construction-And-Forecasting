@@ -724,20 +724,20 @@ def lgb_model(X_train, X_test, validation_type, **params):
                                                df_training.loc[:, DefaultConfig.label_column], \
                                                df_validation.loc[:, DefaultConfig.label_column]
 
-            train_data, validation_data, train_data_weight, validation_data_weight = get_validation(train_x, test_x,
-                                                                                                    train_y, test_y,
-                                                                                                    DefaultConfig.categorical_columns,
-                                                                                                    seeds[model_seed])
+            # train_data, validation_data, train_data_weight, validation_data_weight = get_validation(train_x, test_x,
+            #                                                                                         train_y, test_y,
+            #                                                                                         DefaultConfig.categorical_columns,
+            #                                                                                         seeds[model_seed])
+            #
+            # train_data = lgb.Dataset(train_data.drop(DefaultConfig.label_column, axis=1),
+            #                          label=train_data.loc[:, DefaultConfig.label_column],
+            #                          weight=train_data_weight)
+            # validation_data = lgb.Dataset(validation_data.drop(DefaultConfig.label_column, axis=1),
+            #                               label=validation_data.loc[:, DefaultConfig.label_column],
+            #                               weight=validation_data_weight)
 
-            train_data = lgb.Dataset(train_data.drop(DefaultConfig.label_column, axis=1),
-                                     label=train_data.loc[:, DefaultConfig.label_column],
-                                     weight=train_data_weight)
-            validation_data = lgb.Dataset(validation_data.drop(DefaultConfig.label_column, axis=1),
-                                          label=validation_data.loc[:, DefaultConfig.label_column],
-                                          weight=validation_data_weight)
-
-            # train_data = lgb.Dataset(train_x, label=train_y)
-            # validation_data = lgb.Dataset(test_x, label=test_y)
+            train_data = lgb.Dataset(train_x, label=train_y)
+            validation_data = lgb.Dataset(test_x, label=test_y)
 
             gc.collect()
             bst = lgb.train(params, train_data, valid_sets=[validation_data], num_boost_round=10000, verbose_eval=1000,
@@ -747,11 +747,11 @@ def lgb_model(X_train, X_test, validation_type, **params):
             gc.collect()
 
             fold_importance_df = pd.DataFrame()
-            # fold_importance_df["feature"] = list(test_x.columns)
-            # fold_importance_df["importance"] = bst.feature_importance(importance_type='split',
-            #                                                           iteration=bst.best_iteration)
-            # fold_importance_df["fold"] = index + 1
-            # feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
+            fold_importance_df["feature"] = list(test_x.columns)
+            fold_importance_df["importance"] = bst.feature_importance(importance_type='split',
+                                                                      iteration=bst.best_iteration)
+            fold_importance_df["fold"] = index + 1
+            feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
 
         oof += oof_lgb / num_model_seed
         prediction += prediction_lgb / num_model_seed
@@ -760,7 +760,7 @@ def lgb_model(X_train, X_test, validation_type, **params):
         print('the roc_auc_score for train:', roc_auc_score(y_train, oof_lgb))
 
         if feature_importance is None:
-            feature_importance = None
+            feature_importance = feature_importance_df
         else:
             feature_importance += feature_importance_df
 
@@ -940,6 +940,7 @@ def generate_submition(prediction, X_test, validation_type, submit_or_not=True, 
         sub.to_csv(path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_' +
                                validation_type + '_rate_submit.csv', index=False, encoding='utf-8')
 
+    sub = pd.DataFrame(data=X_test['ID'].astype(int), columns=['ID'])
     sub['Predicted_Results'] = prediction
 
     # 设置id为固定模式
@@ -956,44 +957,46 @@ def generate_submition(prediction, X_test, validation_type, submit_or_not=True, 
     return sub
 
 
-def merge(**params):
+def merge(type, **params):
     """
     merge
     :param params:
     :return:
     """
-    before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-    after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
+    if DefaultConfig.merge_type is 'before_after':
+        before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+        after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
 
-    before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
+        before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
 
-    result = []
-    for i in list(before['Predicted_Results']):
-        if i >= 0.5:
-            result.append(1)
-        else:
-            result.append(0)
+        result = []
+        for i in list(before['Predicted_Results']):
+            if i >= 0.5:
+                result.append(1)
+            else:
+                result.append(0)
 
-    before['Predicted_Results'] = result
+        before['Predicted_Results'] = result
 
-    before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
+        before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
 
-    # lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-    # cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
-    #
-    # lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
-    #
-    # result = []
-    # for i in list(lgb_before['Predicted_Results']):
-    #     if i >= 0.5:
-    #         result.append(1)
-    #     else:
-    #         result.append(0)
-    #
-    # print('sum(1): ', sum(result))
-    # lgb_before['Predicted_Results'] = result
-    #
-    # lgb_before.to_csv(path_or_buf=DefaultConfig.lgb_cbt_submit, index=False, encoding='utf-8')
+    elif DefaultConfig.merge_type is 'lgb_cbt':
+        lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+        cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
+
+        lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
+
+        result = []
+        for i in list(lgb_before['Predicted_Results']):
+            if i >= 0.5:
+                result.append(1)
+            else:
+                result.append(0)
+
+        print('sum(1): ', sum(result))
+        lgb_before['Predicted_Results'] = result
+
+        lgb_before.to_csv(path_or_buf=DefaultConfig.lgb_cbt_submit, index=False, encoding='utf-8')
 
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()
