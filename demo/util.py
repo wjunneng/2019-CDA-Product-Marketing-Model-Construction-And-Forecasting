@@ -848,8 +848,7 @@ def cbt_model(X_train, X_test, validation_type, **params):
 
             gc.collect()
             bst = cbt.CatBoostClassifier(iterations=3000, learning_rate=0.005, verbose=300, early_stopping_rounds=1666,
-                                         task_type='GPU', use_best_model=True, custom_metric='F1',
-                                         eval_metric='F1')
+                                         task_type='GPU', use_best_model=True)
             bst.fit(train_x, train_y,
                     eval_set=(test_x, test_y))
 
@@ -982,9 +981,10 @@ def merge(type, **params):
 
     elif DefaultConfig.merge_type is 'lgb_cbt':
         lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-        cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
+        cbt_before = pd.read_csv(DefaultConfig.cbt_after_submit, encoding='utf-8')
 
-        lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
+        lgb_before['Predicted_Results'] = (
+                0.5 * lgb_before['Predicted_Results'] + 0.5 * cbt_before['Predicted_Results'])
 
         result = []
         for i in list(lgb_before['Predicted_Results']):

@@ -111,3 +111,5 @@ class DefaultConfig(object):
 
     # merge_type
     merge_type = 'lgb_cbt'
+
+    before_or_after = 'after'
