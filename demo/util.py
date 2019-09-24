@@ -135,6 +135,8 @@ def deal_Point_balance(df: pd.DataFrame, **params) -> pd.DataFrame:
 
     # 均值填充
     df["'Point balance'"].replace('?', np.nan, inplace=True)
+    # 0值填充
+    # df["'Point balance'"].replace('0', np.nan, inplace=True)
     df["'Point balance'"] = df["'Point balance'"].astype(float)
     df["'Point balance'"].fillna(df["'Point balance'"].mean(), inplace=True)
 
@@ -206,6 +208,8 @@ def deal_Estimated_salary(df: pd.DataFrame, **params) -> pd.DataFrame:
 
     # 均值填充
     df["' Estimated salary'"].replace('?', np.nan, inplace=True)
+    # 0值填充
+    # df["' Estimated salary'"].replace('0', np.nan, inplace=True)
     df["' Estimated salary'"] = df["' Estimated salary'"].astype(float)
     df["' Estimated salary'"].fillna(df["' Estimated salary'"].mean(), inplace=True)
 
@@ -416,7 +420,6 @@ def preprocess(save=True, **params):
     :return:
     """
     import os
-    from sklearn import preprocessing
 
     df_training_path = DefaultConfig.df_training_cache_path
     df_test_path = DefaultConfig.df_test_cache_path
@@ -500,12 +503,12 @@ def preprocess(save=True, **params):
         # 类别列
         for c_col in ['age']:
             # 数值列
-            for n_col in ["' Estimated salary'"]:
-                df[n_col + '_groupby_' + c_col + '_mean_ratio'] = df[n_col] / (df[c_col].map(df[n_col].groupby(df[c_col]).mean()))
+            for n_col in ["' Estimated salary'", "'Point balance'"]:
+                df[n_col + '_groupby_' + c_col + '_mean_ratio'] = df[n_col] / (
+                    df[c_col].map(df[n_col].groupby(df[c_col]).mean()))
 
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
-        # df_training[DefaultConfig.label_column] = df_training[DefaultConfig.label_column].astype(int)
         df_test = df.loc[count:, :]
         df_test.reset_index(inplace=True, drop=True)
         # ##############################################################################################################
@@ -568,6 +571,88 @@ def reduce_mem_usage(df, verbose=True):
     return df
 
 
+def get_validation(X_train, X_valid, y_train, y_valid, categorical_columns, random_state=42, **params):
+    """
+    返回验证集
+    :param X_train:
+    :param y_train:
+    :param params:
+    :return:
+    """
+    import pandas as pd
+    import lightgbm as lgb
+
+    X_train[DefaultConfig.label_column] = list(y_train)
+    X_valid[DefaultConfig.label_column] = list(y_valid)
+    X_train['Is_Test'] = 0
+    X_valid['Is_Test'] = 1
+
+    # 将 Train 和 Test 合成一个数据集。Quality_label是数据本来的Y，所以剔除。
+    df_adv = pd.concat([X_train, X_valid])
+
+    adv_data = lgb.Dataset(data=df_adv.drop('Is_Test', axis=1), label=df_adv.loc[:, 'Is_Test'])
+
+    # 定义模型参数
+    params = {
+        'boosting_type': 'gbdt',
+        'colsample_bytree': 1,
+        'learning_rate': 0.05,
+        'max_depth': 6,
+        'min_child_samples': 100,
+        'min_child_weight': 1,
+        'num_leaves': 36,
+        'objective': 'binary',
+        'random_state': random_state,
+        'subsample': 1.0,
+        'subsample_freq': 0,
+        'metric': 'auc',
+        'num_threads': 10,
+        'boost_from_average': False,
+        'verbose': -1
+    }
+
+    # 交叉验证
+    adv_cv_results = lgb.cv(
+        params,
+        adv_data,
+        num_boost_round=1000,
+        nfold=5,
+        verbose_eval=False,
+        categorical_feature=categorical_columns,
+        early_stopping_rounds=200,
+        seed=random_state
+    )
+
+    print('交叉验证中最优的AUC为 {:.5f}，对应的标准差为{:.5f}.'.format(
+        adv_cv_results['auc-mean'][-1], adv_cv_results['auc-stdv'][-1]))
+
+    print('模型最优的迭代次数为{}.'.format(len(adv_cv_results['auc-mean'])))
+
+    params['n_estimators'] = len(adv_cv_results['auc-mean'])
+
+    model_adv = lgb.LGBMClassifier(**params)
+    model_adv.fit(df_adv.drop('Is_Test', axis=1), df_adv.loc[:, 'Is_Test'])
+
+    preds_adv = model_adv.predict_proba(df_adv.drop('Is_Test', axis=1))[:, 1]
+
+    del X_train['Is_Test']
+    del X_valid['Is_Test']
+
+    # #################################### 效果不好
+    # X_train['weight'] = preds_adv[:len(X_train)]
+    # X_valid['weight'] = preds_adv[len(X_train):]
+    #
+    # X = pd.concat([X_train, X_valid], axis=0, ignore_index=True)
+    # X.sort_values(by='weight', inplace=True, ascending=True)
+    # X.reset_index(drop=True, inplace=True)
+    #
+    # return X.drop('weight', axis=1).loc[len(X_valid):, :], X.drop('weight', axis=1).loc[:len(X_valid), :], X.loc[len(
+    #     X_valid):, 'weight'], X.loc[:len(X_valid), 'weight']
+
+    # #################################### 不排序
+    return X_train, X_valid, preds_adv[:len(X_train)], preds_adv[len(X_train):]
+
+
 def lgb_model(X_train, X_test, validation_type, **params):
     """
     lgb 模型
@@ -615,29 +700,6 @@ def lgb_model(X_train, X_test, validation_type, **params):
         'max_depth': -1
     }
 
-    # # 寻找最优的num_leaves
-    # min_merror = np.inf
-    # for num_leaves in [50, 100, 150, 200, 250, 300, 500, 1000]:
-    #     params["num_leaves"] = num_leaves
-    #
-    #     cv_results = lgb.cv(params=params,
-    #                         train_set=lgb.Dataset(X_train, label=y_train),
-    #                         num_boost_round=2000,
-    #                         stratified=False,
-    #                         nfold=5,
-    #                         verbose_eval=50,
-    #                         seed=23,
-    #                         early_stopping_rounds=1500)
-    #
-    #     print(cv_results)
-    #     mean_error = min(cv_results['binary_logloss-mean'])
-    #
-    #     if mean_error < min_merror:
-    #         min_merror = mean_error
-    #         params["num_leaves"] = num_leaves
-    #
-    # print('num_leaves: ', num_leaves)
-
     for model_seed in range(num_model_seed):
         print('模型 ', model_seed + 1, ' 开始训练')
         oof_lgb = np.zeros((X_train.shape[0]))
@@ -662,8 +724,20 @@ def lgb_model(X_train, X_test, validation_type, **params):
                                                df_training.loc[:, DefaultConfig.label_column], \
                                                df_validation.loc[:, DefaultConfig.label_column]
 
-            train_data = lgb.Dataset(train_x, label=train_y)
-            validation_data = lgb.Dataset(test_x, label=test_y)
+            train_data, validation_data, train_data_weight, validation_data_weight = get_validation(train_x, test_x,
+                                                                                                    train_y, test_y,
+                                                                                                    DefaultConfig.categorical_columns,
+                                                                                                    seeds[model_seed])
+
+            train_data = lgb.Dataset(train_data.drop(DefaultConfig.label_column, axis=1),
+                                     label=train_data.loc[:, DefaultConfig.label_column],
+                                     weight=train_data_weight)
+            validation_data = lgb.Dataset(validation_data.drop(DefaultConfig.label_column, axis=1),
+                                          label=validation_data.loc[:, DefaultConfig.label_column],
+                                          weight=validation_data_weight)
+
+            # train_data = lgb.Dataset(train_x, label=train_y)
+            # validation_data = lgb.Dataset(test_x, label=test_y)
 
             gc.collect()
             bst = lgb.train(params, train_data, valid_sets=[validation_data], num_boost_round=10000, verbose_eval=1000,
@@ -673,11 +747,11 @@ def lgb_model(X_train, X_test, validation_type, **params):
             gc.collect()
 
             fold_importance_df = pd.DataFrame()
-            fold_importance_df["feature"] = list(test_x.columns)
-            fold_importance_df["importance"] = bst.feature_importance(importance_type='split',
-                                                                      iteration=bst.best_iteration)
-            fold_importance_df["fold"] = index + 1
-            feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
+            # fold_importance_df["feature"] = list(test_x.columns)
+            # fold_importance_df["importance"] = bst.feature_importance(importance_type='split',
+            #                                                           iteration=bst.best_iteration)
+            # fold_importance_df["fold"] = index + 1
+            # feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
 
         oof += oof_lgb / num_model_seed
         prediction += prediction_lgb / num_model_seed
@@ -686,11 +760,13 @@ def lgb_model(X_train, X_test, validation_type, **params):
         print('the roc_auc_score for train:', roc_auc_score(y_train, oof_lgb))
 
         if feature_importance is None:
-            feature_importance = feature_importance_df
+            feature_importance = None
         else:
             feature_importance += feature_importance_df
 
-    feature_importance['importance'] /= num_model_seed
+    if feature_importance is not None:
+        feature_importance['importance'] /= num_model_seed
+
     print('logloss', log_loss(pd.get_dummies(y_train).values, oof))
     print('ac', roc_auc_score(y_train, oof))
 
@@ -886,38 +962,38 @@ def merge(**params):
     :param params:
     :return:
     """
-    # before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-    # after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
-    #
-    # before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
-    #
-    # result = []
-    # for i in list(before['Predicted_Results']):
-    #     if i >= 0.5:
-    #         result.append(1)
-    #     else:
-    #         result.append(0)
-    #
-    # before['Predicted_Results'] = result
-    #
-    # before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
+    before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+    after = pd.read_csv(DefaultConfig.lgb_after_submit, encoding='utf-8')
 
-    lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-    cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
-
-    lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
+    before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
 
     result = []
-    for i in list(lgb_before['Predicted_Results']):
+    for i in list(before['Predicted_Results']):
         if i >= 0.5:
             result.append(1)
         else:
             result.append(0)
 
-    print('sum(1): ', sum(result))
-    lgb_before['Predicted_Results'] = result
+    before['Predicted_Results'] = result
 
-    lgb_before.to_csv(path_or_buf=DefaultConfig.lgb_cbt_submit, index=False, encoding='utf-8')
+    before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
+
+    # lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+    # cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
+    #
+    # lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
+    #
+    # result = []
+    # for i in list(lgb_before['Predicted_Results']):
+    #     if i >= 0.5:
+    #         result.append(1)
+    #     else:
+    #         result.append(0)
+    #
+    # print('sum(1): ', sum(result))
+    # lgb_before['Predicted_Results'] = result
+    #
+    # lgb_before.to_csv(path_or_buf=DefaultConfig.lgb_cbt_submit, index=False, encoding='utf-8')
 
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()
