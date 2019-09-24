@@ -24,15 +24,15 @@ def main():
     #
     # if DefaultConfig.select_model is 'lgb':
     #     # 获取验证集数据
-    #     prediction = lgb_model(df_training, df_test, validation_type=[DefaultConfig.before_or_after])
+    #     prediction = lgb_model(df_training, df_test, validation_type=['before'])
     #     print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
     # elif DefaultConfig.select_model is 'cbt':
     #     # 获取验证集数据
-    #     prediction = cbt_model(df_training, df_test, validation_type=[DefaultConfig.before_or_after])
+    #     prediction = cbt_model(df_training, df_test, validation_type=['before'])
     #     print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
     #
     # # 生成提交结果
-    # generate_submition(prediction, df_test, validation_type=DefaultConfig.before_or_after)
+    # generate_submition(prediction, df_test, validation_type='before')
     # print('\n生成提交结果 耗时： %s \n' % str(time.clock() - start))
 
     # merge
