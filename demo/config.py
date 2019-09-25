@@ -23,7 +23,14 @@ class DefaultConfig(object):
 
     # select_model
     # select_model = 'lgb'
-    select_model = 'cbt'
+    # select_model = 'cbt'
+    # select_model = 'xgb'
+    select_model = 'merge'
+
+    # merge_type
+    # merge_type = 'lgb_cbt_xgb'
+    merge_type = 'lgb_cbt'
+    # merge_type = 'lgb_xgb'
 
     # label_column
     label_column = "'Purchase or not'"
@@ -35,7 +42,7 @@ class DefaultConfig(object):
 
     lgb_feature_cache_path = project_path + '/data/cache/lgb_feature.h5'
     xgb_feature_cache_path = project_path + '/data/cache/xgb_feature.h5'
-    cat_feature_cache_path = project_path + '/data/cache/cat_feature.h5'
+    cbt_feature_cache_path = project_path + '/data/cache/cbt_feature.h5'
 
     # 类别特征
     categorical_columns = ["'User area'", "gender", "'Cumulative using time'", "'Product service usage'",
@@ -47,41 +54,19 @@ class DefaultConfig(object):
     float_columns = ["'Point balance'", "' Estimated salary'"]
 
     if select_model is 'lgb':
-        # mean/mode
+        # mean/mode 0.837
         columns = ["ID", "' Estimated salary'_groupby_age_mean_ratio", "' Estimated salary'",
                    "'Point balance'_groupby_age_mean_ratio", "'Product using score'",
                    "'Point balance'", "age", "'Cumulative using time'", "'User area'", "gender",
-                   "'Product service usage'", "'Active user'", "'Pay a monthly fee by credit card'",
-                   "'Purchase or not'",
-                   ]
+                   "'Product service usage'", "'Active user'", "'Pay a monthly fee by credit card'"]
 
-        # IterForest
-        # columns = ["ID", "' Estimated salary'", "'Point balance'", "'Product using score'", "age",
-        #            "'Cumulative using time'", "'User area'", "'Active user'", "'Product service usage'", "gender",
-        #            "'Pay a monthly fee by credit card'", "'Purchase or not'"]
+        columns.append("'Purchase or not'")
 
-        # EM
-        # columns = ["ID",
-        #            "' Estimated salary'",
-        #            "'Point balance'",
-        #            "'Product using score'",
-        #            "age",
-        #            "'Cumulative using time'",
-        #            "'User area'",
-        #            "gender",
-        #            "'Product service usage'",
-        #            "'Active user'",
-        #            "'Pay a monthly fee by credit card'",
-        #            "'Purchase or not'"]
-
-        # columns = ["ID", "'Point balance'", "'Product using score'", "' Estimated salary'", "age",
-        #            "'Cumulative using time'", "'User area'", "gender", "'Product service usage'", "'Active user'",
-        #            "'Product service usage' Virtual", "'Active user' Virtual", "' Estimated salary' Virtual",
-        #            "'Cumulative using time' Virtual", "age Virtual", "'Pay a monthly fee by credit card' Virtual",
-        #            "'Point balance' Virtual", "'Product using score' Virtual", "'Pay a monthly fee by credit card'",
-        #            "'User area' Virtual", "gender Virtual", "'Purchase or not'"]
+        # before_after
+        before_after = 'before'
 
     elif select_model is 'cbt':
+        # 0.837
         columns = ["age",
                    "'Product service usage'",
                    "'Point balance'",
@@ -92,22 +77,45 @@ class DefaultConfig(object):
                    "'Active user'",
                    "ID",
                    "'Product using score'",
-                   "'Pay a monthly fee by credit card'",
-                   "'Purchase or not'"]
+                   "'Pay a monthly fee by credit card'"]
+
+        columns.append("'Purchase or not'")
+
+        before_after = 'before'
+
+    elif select_model is 'xgb':
+        columns = ["'Product service usage'", "'Active user'", 'age', "'User area'", "'Point balance'", 'gender',
+                   "' Estimated salary'", 'ID', "'Product using score'", "'Pay a monthly fee by credit card'",
+                   "'Cumulative using time'"]
+
+        columns.append("'Purchase or not'")
+
+        # before_after
+        before_after = 'before_after'
 
     # lgb before submit
     lgb_before_submit = project_path + '/data/submit/lgb_before_submit.csv'
     # lgb after submit
     lgb_after_submit = project_path + '/data/submit/lgb_after_submit.csv'
+    # lgb before_after submit
+    lgb_before_after_submit = project_path + '/data/submit/lgb_before_after_submit.csv'
+
     # cbt before submit
     cbt_before_submit = project_path + '/data/submit/cbt_before_submit.csv'
     # cbt after submit
     cbt_after_submit = project_path + '/data/submit/cbt_after_submit.csv'
+    # cbt before_after submit
+    cbt_before_after_submit = project_path + '/data/submit/cbt_before_after_submit.csv'
+
+    # xgb before submit
+    xgb_before_submit = project_path + '/data/submit/xgb_before_submit.csv'
+    # xgb after submit
+    xgb_after_submit = project_path + '/data/submit/xgb_after_submit.csv'
+    # xgb before_after submit
+    xgb_before_after_submit = project_path + '/data/submit/xgb_before_after_submit.csv'
 
     # lgb submit
     lgb_submit = project_path + '/data/submit/lgb_submit.csv'
-    # lgb_cbt_submit
-    lgb_cbt_submit = project_path + '/data/submit/lgb_cbt_submit.csv'
+    # submition
+    submition = project_path + '/data/submit/submition.csv'
 
-    # merge_type
-    merge_type = 'lgb_cbt'

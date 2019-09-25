@@ -135,8 +135,6 @@ def deal_Point_balance(df: pd.DataFrame, **params) -> pd.DataFrame:
 
     # 均值填充
     df["'Point balance'"].replace('?', np.nan, inplace=True)
-    # 0值填充
-    # df["'Point balance'"].replace('0', np.nan, inplace=True)
     df["'Point balance'"] = df["'Point balance'"].astype(float)
     df["'Point balance'"].fillna(df["'Point balance'"].mean(), inplace=True)
 
@@ -208,8 +206,6 @@ def deal_Estimated_salary(df: pd.DataFrame, **params) -> pd.DataFrame:
 
     # 均值填充
     df["' Estimated salary'"].replace('?', np.nan, inplace=True)
-    # 0值填充
-    # df["' Estimated salary'"].replace('0', np.nan, inplace=True)
     df["' Estimated salary'"] = df["' Estimated salary'"].astype(float)
     df["' Estimated salary'"].fillna(df["' Estimated salary'"].mean(), inplace=True)
 
@@ -226,13 +222,20 @@ def get_validation_data(df_training, df_test, type='after', **params):
     """
     df_validation = pd.DataFrame()
 
-    if type is 'after':
+    if type is 'before':
+        for row in range(df_test.shape[0]):
+            df_validation = pd.concat([df_validation, df_training[df_training['ID'] == (df_test.ix[row, 'ID'] - 1)]])
+
+    elif type is 'after':
         for row in range(df_test.shape[0]):
             df_validation = pd.concat([df_validation, df_training[df_training['ID'] == (df_test.ix[row, 'ID'] + 1)]])
 
-    elif type is 'before':
+    elif type is 'before_after':
         for row in range(df_test.shape[0]):
             df_validation = pd.concat([df_validation, df_training[df_training['ID'] == (df_test.ix[row, 'ID'] - 1)]])
+            df_validation = pd.concat([df_validation, df_training[df_training['ID'] == (df_test.ix[row, 'ID'] + 1)]])
+
+        df_validation.drop_duplicates(inplace=True, keep='first')
 
     ids = list(df_training['ID'])
     for id in list(df_validation['ID']):
@@ -420,6 +423,8 @@ def preprocess(save=True, **params):
     :return:
     """
     import os
+    import numpy as np
+    from sklearn.preprocessing import FunctionTransformer
 
     df_training_path = DefaultConfig.df_training_cache_path
     df_test_path = DefaultConfig.df_test_cache_path
@@ -481,6 +486,44 @@ def preprocess(save=True, **params):
         # ##############################################################################################################
         df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
 
+        # # 一、处理Product_using_score   产品使用分数
+        # df = deal_Product_using_score(df)
+        #
+        # # 二、处理User_area     用户地区
+        # df = deal_User_area(df)
+        #
+        # # 三、处理gender    性别
+        # df = deal_gender(df)
+        #
+        # # 四、处理age  年龄
+        # df = deal_age(df)
+        #
+        # # 五、处理Cumulative_using_time     使用累计时间
+        # df = deal_Cumulative_using_time(df)
+        #
+        # # # 六、处理Point_balance     点数余额
+        # df = deal_Point_balance(df)
+        #
+        # # 七、处理Product_service_usage 产品服务实用量
+        # df = deal_Product_service_usage(df)
+        #
+        # # 八、处理Pay_a_monthly_fee_by_credit_card  是否使用信用卡付月费
+        # df = deal_Pay_a_monthly_fee_by_credit_card(df)
+        #
+        # # 九、处理Active_user   是否为活跃用户
+        # df = deal_Active_user(df)
+        #
+        # # # 十、处理Estimated_salary  估计薪资
+        # df = deal_Estimated_salary(df)
+
+        # 3.数值列
+        # 类别列
+        for c_col in ['age']:
+            # 数值列
+            for n_col in ["' Estimated salary'", "'Point balance'"]:
+                df[n_col + '_groupby_' + c_col + '_mean_ratio'] = df[n_col] / (
+                    df[c_col].map(df[n_col].groupby(df[c_col]).mean()))
+
         # ################################################################ KNN
         # df = KNN_missing_value(df)
         # ################################################################ MICE
@@ -495,17 +538,15 @@ def preprocess(save=True, **params):
         # print(DefaultConfig.float_columns)
         # pt = preprocessing.PowerTransformer(method='yeo-johnson', standardize=True)
         # df[DefaultConfig.float_columns] = pt.fit_transform(df[DefaultConfig.float_columns])
-        #
-        # # 整数变量需要转化为整数
-        # df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
 
-        # 3.数值列
-        # 类别列
-        for c_col in ['age']:
-            # 数值列
-            for n_col in ["' Estimated salary'", "'Point balance'"]:
-                df[n_col + '_groupby_' + c_col + '_mean_ratio'] = df[n_col] / (
-                    df[c_col].map(df[n_col].groupby(df[c_col]).mean()))
+        ########################################### 要进行对数变换的特征列
+        # print('进行对数变换的特征列：')
+        # print(DefaultConfig.float_columns)
+        # transformer = FunctionTransformer(np.log1p)
+        # df[DefaultConfig.float_columns] = transformer.fit_transform(df[DefaultConfig.float_columns].values)
+
+        # 整数变量需要转化为整数
+        # df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
 
         count = df_training.shape[0]
         df_training = df.loc[:count - 1, :]
@@ -668,6 +709,7 @@ def lgb_model(X_train, X_test, validation_type, **params):
     import lightgbm as lgb
     from sklearn.metrics import log_loss, roc_auc_score, f1_score
     import matplotlib.pyplot as plt
+    from boruta import BorutaPy
 
     def lgb_f1_score(y_hat, data):
         y_true = list(data.get_label())
@@ -713,7 +755,12 @@ def lgb_model(X_train, X_test, validation_type, **params):
             # 获取验证集
             df_training, df_validation, df_test = get_validation_data(df_training=X_train, df_test=X_test, type=value)
             # 0/1数目
+            print('df_traing[label].value_counts:')
             print(df_training[DefaultConfig.label_column].value_counts())
+
+            print('df_validation[label].value_counts:')
+            print(df_validation[DefaultConfig.label_column].value_counts())
+
             # # 采样
             # df_training = smote(df_training)
             # df_training[DefaultConfig.int_columns] = df_training[DefaultConfig.int_columns].astype(int)
@@ -742,12 +789,13 @@ def lgb_model(X_train, X_test, validation_type, **params):
             gc.collect()
             bst = lgb.train(params, train_data, valid_sets=[validation_data], num_boost_round=10000, verbose_eval=1000,
                             early_stopping_rounds=2019, feval=lgb_f1_score)
+
             oof_lgb[test_x.index] += bst.predict(test_x)
             prediction_lgb += bst.predict(X_test.drop(DefaultConfig.label_column, axis=1)) / len(validation_type)
             gc.collect()
 
             fold_importance_df = pd.DataFrame()
-            fold_importance_df["feature"] = list(test_x.columns)
+            fold_importance_df["feature"] = list(bst.feature_name())
             fold_importance_df["importance"] = bst.feature_importance(importance_type='split',
                                                                       iteration=bst.best_iteration)
             fold_importance_df["fold"] = index + 1
@@ -787,7 +835,211 @@ def lgb_model(X_train, X_test, validation_type, **params):
             result.append(value)
 
         result = pd.concat(result)
-        print(result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40))
+        print(list(dict(result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False)).keys()))
+        # 5折数据取平均值
+        result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40).plot.barh()
+        plt.show()
+
+    return prediction
+
+
+def lgb_classifier_model(X_train, X_test, validation_type, **params):
+    """
+    LGBMClassifier
+    :param X_train:
+    :param X_test:
+    :param validation_type:
+    :param params:
+    :return:
+    """
+    import lightgbm as lgb
+    from boruta import BorutaPy
+
+    gbm = lgb.LGBMClassifier(boosting_type='gbdt',
+                             objective='binary',
+                             metric='F1',
+                             verbose=0,
+                             learning_rate=0.01,
+                             num_leaves=100,
+                             feature_fraction=0.8,
+                             bagging_fraction=0.9,
+                             bagging_freq=8,
+                             lambda_l1=0.6,
+                             lambda_l2=0,
+                             random_state=42)
+    # 有了gridsearch我们便不需要fit函数
+    # 获取验证集
+    df_training, df_validation, df_test = get_validation_data(df_training=X_train, df_test=X_test,
+                                                              type=DefaultConfig.before_after)
+    # 0/1数目
+    print('df_traing[label].value_counts:')
+    print(df_training[DefaultConfig.label_column].value_counts())
+
+    print('df_validation[label].value_counts:')
+    print(df_validation[DefaultConfig.label_column].value_counts())
+
+    # 分割
+    train_x, test_x, train_y, test_y = df_training.drop(labels=DefaultConfig.label_column, axis=1), \
+                                       df_validation.drop(labels=DefaultConfig.label_column, axis=1), \
+                                       df_training.loc[:, DefaultConfig.label_column], \
+                                       df_validation.loc[:, DefaultConfig.label_column]
+
+    train_y = train_y.astype(int)
+    test_y = test_y.astype(int)
+    gbm.fit(X=train_x, y=train_y, eval_set=(test_x, test_y))
+    # Boruta特征选择器
+    feat_selector = BorutaPy(gbm, n_estimators=500, verbose=2, random_state=42)
+
+    train = pd.concat([df_training, df_validation], axis=0, ignore_index=True)
+    train.sort_values(by='ID', inplace=True)
+    train.reset_index(inplace=True, drop=True)
+
+    # 寻找所有的特征
+    feat_selector.fit(train.drop(labels=DefaultConfig.label_column, axis=1).values,
+                      train.loc[:, DefaultConfig.label_column].astype(int).values)
+    # 检查所有的特征
+    print(feat_selector.support_)
+    print(train.columns[feat_selector.support_])
+
+
+def xgb_model(X_train, X_test, validation_type, **params):
+    """
+    xgb 模型
+    :param new_train:
+    :param y:
+    :param new_test:
+    :param columns:
+    :param params:
+    :return:
+    """
+    import gc
+    import numpy as np
+    import xgboost as xgb
+    from sklearn.metrics import log_loss, roc_auc_score, f1_score
+    import matplotlib.pyplot as plt
+
+    def xgb_score(y, t):
+        t = t.get_label()
+        y_bin = [1. if y_cont >= 0.5 else 0. for y_cont in y]  # binaryzing your output
+        return 'f1', f1_score(t, y_bin)
+
+    # y_train
+    y_train = list(X_train.loc[:, DefaultConfig.label_column])
+    # 特征重要性
+    feature_importance = None
+    # 线下验证
+    oof = np.zeros((X_train.shape[0]))
+    # 线上结论
+    prediction = np.zeros((X_test.shape[0]))
+
+    seeds = [42, 2019, 223344, 2019 * 2 + 1024, 332232111]
+    num_model_seed = 1
+
+    print(DefaultConfig.select_model + ' start training...')
+
+    params = {'max_depth': 7,
+              'eta': 0.25,
+              'silent': 1,
+              'subsample': 1,
+              'lambda': 50,
+              'objective': 'binary:logistic'}
+
+    for model_seed in range(num_model_seed):
+        print('模型 ', model_seed + 1, ' 开始训练')
+        oof_xgb = np.zeros((X_train.shape[0]))
+        prediction_xgb = np.zeros((X_test.shape[0]))
+
+        # 存放特征重要性
+        feature_importance_df = pd.DataFrame()
+        for index, value in enumerate(validation_type):
+            print('第 ' + str(index) + ' 折')
+
+            # 获取验证集
+            df_training, df_validation, df_test = get_validation_data(df_training=X_train, df_test=X_test, type=value)
+            # 0/1数目
+            print('df_traing[label].value_counts:')
+            print(df_training[DefaultConfig.label_column].value_counts())
+
+            print('df_validation[label].value_counts:')
+            print(df_validation[DefaultConfig.label_column].value_counts())
+
+            # # 采样
+            # df_training = smote(df_training)
+            # df_training[DefaultConfig.int_columns] = df_training[DefaultConfig.int_columns].astype(int)
+
+            # 分割
+            train_x, test_x, train_y, test_y = df_training.drop(labels=DefaultConfig.label_column, axis=1), \
+                                               df_validation.drop(labels=DefaultConfig.label_column, axis=1), \
+                                               df_training.loc[:, DefaultConfig.label_column], \
+                                               df_validation.loc[:, DefaultConfig.label_column]
+
+            # train_data, validation_data, train_data_weight, validation_data_weight = get_validation(train_x, test_x,
+            #                                                                                         train_y, test_y,
+            #                                                                                         DefaultConfig.categorical_columns,
+            #                                                                                         seeds[model_seed])
+            #
+            # train_data = lgb.Dataset(train_data.drop(DefaultConfig.label_column, axis=1),
+            #                          label=train_data.loc[:, DefaultConfig.label_column],
+            #                          weight=train_data_weight)
+            # validation_data = lgb.Dataset(validation_data.drop(DefaultConfig.label_column, axis=1),
+            #                               label=validation_data.loc[:, DefaultConfig.label_column],
+            #                               weight=validation_data_weight)
+
+            train_data = xgb.DMatrix(data=train_x, label=train_y, nthread=10)
+            validation_data = xgb.DMatrix(data=test_x, label=test_y, nthread=10)
+
+            gc.collect()
+            bst = xgb.train(params=params, dtrain=train_data,
+                            evals=[(train_data, 'train'), (validation_data, 'validation')],
+                            num_boost_round=1500, early_stopping_rounds=1000, feval=xgb_score,
+                            verbose_eval=False)
+            oof_xgb[test_x.index] += bst.predict(xgb.DMatrix(test_x))
+            prediction_xgb += bst.predict(
+                xgb.DMatrix(X_test.drop(DefaultConfig.label_column, axis=1) / len(validation_type)))
+            gc.collect()
+
+            fold_importance_df = pd.DataFrame()
+            fold_importance_df["feature"] = list(bst.get_score(importance_type='gain').keys())
+            fold_importance_df["importance"] = list(bst.get_score(importance_type='gain').values())
+            fold_importance_df["fold"] = index + 1
+            feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
+
+        oof += oof_xgb / num_model_seed
+        prediction += prediction_xgb / num_model_seed
+        print('logloss', log_loss(pd.get_dummies(y_train).values, oof_xgb))
+        # 线下auc评分
+        print('the roc_auc_score for train:', roc_auc_score(y_train, oof_xgb))
+
+        if feature_importance is None:
+            feature_importance = feature_importance_df
+        else:
+            feature_importance += feature_importance_df
+
+    print(feature_importance['importance'])
+    if feature_importance is not None:
+        feature_importance['importance'] /= num_model_seed
+
+    print('logloss', log_loss(pd.get_dummies(y_train).values, oof))
+    print('ac', roc_auc_score(y_train, oof))
+
+    if feature_importance is not None:
+        feature_importance.to_hdf(path_or_buf=DefaultConfig.xgb_feature_cache_path, key='xgb')
+        # 读取feature_importance_df
+        feature_importance_df = reduce_mem_usage(
+            pd.read_hdf(path_or_buf=DefaultConfig.xgb_feature_cache_path, key='xgb', mode='r'))
+
+        plt.figure(figsize=(8, 8))
+        # 按照flod分组
+        group = feature_importance_df.groupby(by=['fold'])
+
+        result = []
+        for key, value in group:
+            value = value[['feature', 'importance']]
+
+            result.append(value)
+
+        result = pd.concat(result)
+        print(list(dict(result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False)).keys()))
         # 5折数据取平均值
         result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40).plot.barh()
         plt.show()
@@ -829,8 +1081,8 @@ def cbt_model(X_train, X_test, validation_type, **params):
 
     for model_seed in range(num_model_seed):
         print('模型 ', model_seed + 1, ' 开始训练')
-        oof_lgb = np.zeros((X_train.shape[0]))
-        prediction_lgb = np.zeros((X_test.shape[0]))
+        oof_cbt = np.zeros((X_train.shape[0]))
+        prediction_cbt = np.zeros((X_test.shape[0]))
 
         # 存放特征重要性
         feature_importance_df = pd.DataFrame()
@@ -839,6 +1091,12 @@ def cbt_model(X_train, X_test, validation_type, **params):
 
             # 获取验证集
             df_training, df_validation, df_test = get_validation_data(df_training=X_train, df_test=X_test, type=value)
+            # 0/1数目
+            print('df_traing[label].value_counts:')
+            print(df_training[DefaultConfig.label_column].value_counts())
+
+            print('df_validation[label].value_counts:')
+            print(df_validation[DefaultConfig.label_column].value_counts())
 
             # 分割
             train_x, test_x, train_y, test_y = df_training.drop(labels=DefaultConfig.label_column, axis=1), \
@@ -848,27 +1106,26 @@ def cbt_model(X_train, X_test, validation_type, **params):
 
             gc.collect()
             bst = cbt.CatBoostClassifier(iterations=3000, learning_rate=0.005, verbose=300, early_stopping_rounds=1666,
-                                         task_type='GPU', use_best_model=True, custom_metric='F1',
-                                         eval_metric='F1')
+                                         task_type='GPU', use_best_model=True)
             bst.fit(train_x, train_y,
                     eval_set=(test_x, test_y))
 
-            oof_lgb[test_x.index] += bst.predict_proba(test_x)[:, 1]
-            prediction_lgb += bst.predict_proba(X_test.drop(DefaultConfig.label_column, axis=1))[:, 1] / len(
+            oof_cbt[test_x.index] += bst.predict_proba(test_x)[:, 1]
+            prediction_cbt += bst.predict_proba(X_test.drop(DefaultConfig.label_column, axis=1))[:, 1] / len(
                 validation_type)
             gc.collect()
 
             fold_importance_df = pd.DataFrame()
-            fold_importance_df["feature"] = list(test_x.columns)
+            fold_importance_df["feature"] = list(bst.feature_names_)
             fold_importance_df["importance"] = bst.get_feature_importance()
             fold_importance_df["fold"] = index + 1
             feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
 
-        oof += oof_lgb / num_model_seed
-        prediction += prediction_lgb / num_model_seed
-        print('logloss', log_loss(pd.get_dummies(y_train).values, oof_lgb))
+        oof += oof_cbt / num_model_seed
+        prediction += prediction_cbt / num_model_seed
+        print('logloss', log_loss(pd.get_dummies(y_train).values, oof_cbt))
         # 线下auc评分
-        print('the roc_auc_score for train:', roc_auc_score(y_train, oof_lgb))
+        print('the roc_auc_score for train:', roc_auc_score(y_train, oof_cbt))
 
         if feature_importance is None:
             feature_importance = feature_importance_df
@@ -880,10 +1137,10 @@ def cbt_model(X_train, X_test, validation_type, **params):
     print('ac', roc_auc_score(y_train, oof))
 
     if feature_importance is not None:
-        feature_importance.to_hdf(path_or_buf=DefaultConfig.lgb_feature_cache_path, key='lgb')
+        feature_importance.to_hdf(path_or_buf=DefaultConfig.cbt_feature_cache_path, key='cbt')
         # 读取feature_importance_df
         feature_importance_df = reduce_mem_usage(
-            pd.read_hdf(path_or_buf=DefaultConfig.lgb_feature_cache_path, key='lgb', mode='r'))
+            pd.read_hdf(path_or_buf=DefaultConfig.cbt_feature_cache_path, key='cbt', mode='r'))
 
         plt.figure(figsize=(8, 8))
         # 按照flod分组
@@ -896,7 +1153,7 @@ def cbt_model(X_train, X_test, validation_type, **params):
             result.append(value)
 
         result = pd.concat(result)
-        print(result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40))
+        print(list(dict(result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False)).keys()))
         # 5折数据取平均值
         result.groupby(['feature'])['importance'].agg('mean').sort_values(ascending=False).head(40).plot.barh()
         plt.show()
@@ -969,34 +1226,38 @@ def merge(type, **params):
 
         before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
 
-        result = []
-        for i in list(before['Predicted_Results']):
-            if i >= 0.5:
-                result.append(1)
-            else:
-                result.append(0)
-
-        before['Predicted_Results'] = result
-
-        before.to_csv(path_or_buf=DefaultConfig.lgb_submit, index=False, encoding='utf-8')
-
     elif DefaultConfig.merge_type is 'lgb_cbt':
         lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-        cbt_before = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
+        cbt_after = pd.read_csv(DefaultConfig.cbt_after_submit, encoding='utf-8')
 
-        lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results'] + cbt_before['Predicted_Results']) / 2
+        lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results']*0.5 + cbt_after['Predicted_Results']*0.5)
 
-        result = []
-        for i in list(lgb_before['Predicted_Results']):
-            if i >= 0.5:
-                result.append(1)
-            else:
-                result.append(0)
+    elif DefaultConfig.merge_type is 'lgb_xgb':
+        lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+        xgb_before_after = pd.read_csv(DefaultConfig.xgb_before_after_submit, encoding='utf-8')
 
-        print('sum(1): ', sum(result))
-        lgb_before['Predicted_Results'] = result
+        lgb_before['Predicted_Results'] = 0.9 * lgb_before['Predicted_Results'] + 0.1 * xgb_before_after[
+            'Predicted_Results']
 
-        lgb_before.to_csv(path_or_buf=DefaultConfig.lgb_cbt_submit, index=False, encoding='utf-8')
+    elif DefaultConfig.merge_type is 'lgb_cbt_xgb':
+        lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+        cbt_after = pd.read_csv(DefaultConfig.cbt_after_submit, encoding='utf-8')
+        xgb_before_after = pd.read_csv(DefaultConfig.xgb_before_after_submit, encoding='utf-8')
+
+        lgb_before['Predicted_Results'] = 0.4 * lgb_before['Predicted_Results'] + 0.5 * cbt_after['Predicted_Results'] + \
+                                          0.1 * xgb_before_after['Predicted_Results']
+
+    result = []
+    for i in list(lgb_before['Predicted_Results']):
+        if i >= 0.5:
+            result.append(1)
+        else:
+            result.append(0)
+
+    print('sum(1): ', sum(result))
+    lgb_before['Predicted_Results'] = result
+
+    lgb_before.to_csv(path_or_buf=DefaultConfig.submition, index=False, encoding='utf-8')
 
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()
