@@ -1227,10 +1227,10 @@ def merge(type, **params):
         before['Predicted_Results'] = (before['Predicted_Results'] + after['Predicted_Results']) / 2
 
     elif DefaultConfig.merge_type is 'lgb_cbt':
-        lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
-        cbt_after = pd.read_csv(DefaultConfig.cbt_after_submit, encoding='utf-8')
+        lgb = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
+        cbt = pd.read_csv(DefaultConfig.cbt_before_submit, encoding='utf-8')
 
-        lgb_before['Predicted_Results'] = (lgb_before['Predicted_Results']*0.5 + cbt_after['Predicted_Results']*0.5)
+        lgb['Predicted_Results'] = (lgb['Predicted_Results'] * 0.05 + cbt['Predicted_Results'] * 0.95)
 
     elif DefaultConfig.merge_type is 'lgb_xgb':
         lgb_before = pd.read_csv(DefaultConfig.lgb_before_submit, encoding='utf-8')
@@ -1248,16 +1248,16 @@ def merge(type, **params):
                                           0.1 * xgb_before_after['Predicted_Results']
 
     result = []
-    for i in list(lgb_before['Predicted_Results']):
+    for i in list(lgb['Predicted_Results']):
         if i >= 0.5:
             result.append(1)
         else:
             result.append(0)
 
     print('sum(1): ', sum(result))
-    lgb_before['Predicted_Results'] = result
+    lgb['Predicted_Results'] = result
 
-    lgb_before.to_csv(path_or_buf=DefaultConfig.submition, index=False, encoding='utf-8')
+    lgb.to_csv(path_or_buf=DefaultConfig.submition, index=False, encoding='utf-8')
 
 # if __name__ == '__main__':
 #     df_training, df_validation, df_test = preprocess()

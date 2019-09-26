@@ -23,9 +23,9 @@ class DefaultConfig(object):
 
     # select_model
     # select_model = 'lgb'
-    select_model = 'cbt'
+    # select_model = 'cbt'
     # select_model = 'xgb'
-    # select_model = 'merge'
+    select_model = 'merge'
 
     # merge_type
     # merge_type = 'lgb_cbt_xgb'
@@ -81,7 +81,7 @@ class DefaultConfig(object):
 
         columns.append("'Purchase or not'")
 
-        before_after = 'before'
+        before_after = 'before_after'
 
     elif select_model is 'xgb':
         columns = ["'Product service usage'", "'Active user'", 'age', "'User area'", "'Point balance'", 'gender',
@@ -118,4 +118,3 @@ class DefaultConfig(object):
     lgb_submit = project_path + '/data/submit/lgb_submit.csv'
     # submition
     submition = project_path + '/data/submit/submition.csv'
-
