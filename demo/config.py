@@ -23,9 +23,9 @@ class DefaultConfig(object):
 
     # select_model
     # select_model = 'lgb'
-    # select_model = 'cbt'
+    select_model = 'cbt'
     # select_model = 'xgb'
-    select_model = 'merge'
+    # select_model = 'merge'
 
     # merge_type
     # merge_type = 'lgb_cbt_xgb'
