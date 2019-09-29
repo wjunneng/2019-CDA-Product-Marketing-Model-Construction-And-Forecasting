@@ -64,6 +64,8 @@ class Preprocess(object):
 
         df = self.drop_row(df)
 
+        df['ID'] = df['ID'].astype(int)
+
         df.sort_values(by='ID', inplace=True)
 
         df.rename(columns=dict(zip(list(df.columns), [i.strip("'").strip(' ') for i in list(df.columns)])),
@@ -171,6 +173,24 @@ class Preprocess(object):
                 df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
 
             elif DefaultConfig.select_model is 'cbt':
+                # ################################################################ 先合并，再处理
+                # 合并
+                # df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
+
+                # df
+                # df = self.pre_deal(df)
+                # ################################################################# 先处理，再合并
+                df_training_0 = df_training[df_training[DefaultConfig.label_column] == 0]
+                df_training_1 = df_training[df_training[DefaultConfig.label_column] == 1]
+
+                df_training_0 = self.pre_deal(df_training_0)
+                df_training_1 = self.pre_deal(df_training_1)
+
+                df_training = pd.concat([df_training_0, df_training_1], axis=0, ignore_index=True)
+
+                df_training.sort_values(by='ID', inplace=True)
+
+                df_training.reset_index(drop=True, inplace=True)
                 # 合并
                 df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
 

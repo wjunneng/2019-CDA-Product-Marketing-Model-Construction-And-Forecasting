@@ -51,9 +51,9 @@ class LightGbm(object):
         print(DefaultConfig.select_model + ' start training...')
 
         for model_seed in range(num_model_seed):
-            params = {'bagging_fraction': 0.5121462324340804, 'feature_fraction': 0.5174384402885819,
-                      'lambda_l1': 4.969972779088037, 'lambda_l2': 0.9329835645863005, 'max_depth': 5,
-                      'min_child_weight': 5.594628962551301, 'min_split_gain': 0.04198971046219193, 'num_leaves': 25,
+            params = {'bagging_fraction': 0.9058367881361415, 'feature_fraction': 0.8553295404272032,
+                      'lambda_l1': 4.62589072415979, 'lambda_l2': 0.16388718639878053, 'max_depth': 5,
+                      'min_child_weight': 5.145828593798635, 'min_split_gain': 0.033193758010569265, 'num_leaves': 26,
                       'application': 'binary', 'num_iterations': 2019, 'learning_rate': 0.05,
                       'early_stopping_round': 100}
 
@@ -63,7 +63,8 @@ class LightGbm(object):
 
             # 获取验证集
             df_training, df_validation, df_test = Preprocess.get_validation_data(df_training=self.X_train,
-                                                                                 df_test=self.X_test)
+                                                                                 df_test=self.X_test,
+                                                                                 type=DefaultConfig.before_after[0])
             # 0/1数目
             print('df_traing[label].value_counts:')
             print(df_training[DefaultConfig.label_column].value_counts())
@@ -121,4 +122,3 @@ class LightGbm(object):
             plt.show()
 
         return prediction
-

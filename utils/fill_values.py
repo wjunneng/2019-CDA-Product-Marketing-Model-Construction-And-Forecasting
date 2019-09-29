@@ -81,6 +81,10 @@ class FillValues(object):
 
             return self.df
 
+        elif fillmethod is 'pad':
+            self.df[self.columns] = self.df[self.columns].fillna(method='pad')
+
+
         # before = self.df[self.columns].values
         # after = SimpleFill(fill_method=fillmethod).complete(before.reshape(1, -1))
         # self.df[self.columns] = after

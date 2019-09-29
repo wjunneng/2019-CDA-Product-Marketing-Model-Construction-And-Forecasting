@@ -63,7 +63,7 @@ class DefaultConfig(object):
         columns.append('Purchase or not')
 
         # before_after
-        before_after = 'before'
+        before_after = ['before']
 
     elif select_model is 'cbt':
         columns = list(

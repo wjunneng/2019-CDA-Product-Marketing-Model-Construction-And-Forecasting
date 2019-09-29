@@ -30,8 +30,11 @@ def main():
     df_training, df_test = preprocess.main()
     print('\n加载数据 耗时： %s \n' % str(time.clock() - start))
 
-    # df_training = df_training[DefaultConfig.columns]
-    # df_test = df_test[DefaultConfig.columns]
+    df_training = df_training[DefaultConfig.columns]
+    df_test = df_test[DefaultConfig.columns]
+
+    print('df_training.shape: ', df_training.shape)
+    print('df_test.shape: ', df_test.shape)
 
     if DefaultConfig.select_model is 'lgbm':
         from model.lgbm import LightGbm
@@ -47,7 +50,7 @@ def main():
 
     elif DefaultConfig.select_model is 'cbt':
         # 获取验证集数据
-        prediction = CatBoost(df_training, df_test).main()
+        prediction = CatBoost(df_training, df_test).cv()
         print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
 
     # elif DefaultConfig.select_model is 'xgb':
