@@ -43,9 +43,9 @@ class DefaultConfig(object):
     # select_model = 'lgbm'
     # select_model = 'lgbm_classifier'
 
-    select_model = 'cbt'
+    # select_model = 'cbt'
     # select_model = 'xgb'
-    # select_model = 'merge'
+    select_model = 'merge'
 
     modeltypes = ['lgbm', 'cbt']
 
@@ -66,9 +66,11 @@ class DefaultConfig(object):
         before_after = ['before']
 
     elif select_model is 'cbt':
+        # 0.375
         columns = list(
             ['Product service usage', 'age', 'Point balance', 'User area', 'Active user', 'Estimated salary',
              'Product using score', 'ID', 'gender', 'Cumulative using time', 'Pay a monthly fee by credit card'])
+
         columns.append('Purchase or not')
         # before_after
         before_after = ['before']

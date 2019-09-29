@@ -6,6 +6,7 @@ from utils.fill_values import FillValues
 from configuration.config import DefaultConfig
 from utils.utils import Utils
 from collections import Counter
+import sys
 
 
 class Preprocess(object):
@@ -105,7 +106,26 @@ class Preprocess(object):
 
         return df
 
-    def pre_deal(self, df, **params) -> pd.DataFrame:
+    def get_quantile(self, df, column, **params):
+        """
+        获取分位数
+        :param df:
+        :param params:
+        :return:
+        """
+        import numpy as np
+
+        df.replace(np.nan, -1, inplace=True)
+
+        df_ = df[df[column] != -1]
+
+        df_[column] = df_[column].astype(int)
+
+        quantile = dict(df_[column].describe())
+        # min/25%/50%/75%/max
+        return [quantile['25%'], quantile['50%'], quantile['75%']]
+
+    def pre_deal(self, df, df_type=False, **params) -> pd.DataFrame:
         """
         预处理
         :param df:
@@ -113,6 +133,17 @@ class Preprocess(object):
         :return:
         """
         print('pre_deal start...')
+
+        # 0、处理age
+        quantile = []
+        if df_type:
+            df_training_0_tmp = df[df[DefaultConfig.label_column] == 0]
+            df_training_1_tmp = df[df[DefaultConfig.label_column] == 1]
+            df_test_tmp = df[(df[DefaultConfig.label_column] != 0) & (df[DefaultConfig.label_column] != 1)]
+
+            for df_tmp in [df_training_0_tmp, df_training_1_tmp, df_test_tmp]:
+                quantile.extend(self.get_quantile(df=df_tmp, column="age"))
+
         # 类别标签
         label_value = df[DefaultConfig.label_column]
         del df[DefaultConfig.label_column]
@@ -136,6 +167,17 @@ class Preprocess(object):
         df[missing_value_columns] = df[missing_value_columns].astype(int)
 
         df[DefaultConfig.label_column] = label_value
+
+        # 添加新列
+        if df_type and len(quantile) != 0:
+            quantile.extend([sys.maxsize, -1])
+            quantile.sort()
+
+            for i in range(len(quantile)):
+                df['age_discrete'] = df['age'].copy()
+                df['age_discrete'] = pd.cut(x=df['age_discrete'], bins=quantile, labels=list(range(len(quantile) - 1)))
+
+            df['age_discrete'] = df['age_discrete'].astype(int)
         print('pre_deal end...')
 
         return df
@@ -165,30 +207,30 @@ class Preprocess(object):
 
             if DefaultConfig.select_model is 'lgbm':
                 # ###############################################################
-                # # df_test
-                # df_test = self.pre_deal(df_test)
-                # # df_training
-                # df_training = self.pre_deal(df_training)
-                #
-                # # 合并
-                # df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
-                # ###############################################################
-                df_training_0 = df_training[df_training[DefaultConfig.label_column] == 0]
-                df_training_1 = df_training[df_training[DefaultConfig.label_column] == 1]
+                # df_test
+                df_test = self.pre_deal(df_test)
+                # df_training
+                df_training = self.pre_deal(df_training)
 
-                df_training_0 = self.pre_deal(df_training_0)
-                df_training_1 = self.pre_deal(df_training_1)
-
-                df_training = pd.concat([df_training_0, df_training_1], axis=0, ignore_index=True)
-
-                df_training.sort_values(by='ID', inplace=True)
-
-                df_training.reset_index(drop=True, inplace=True)
                 # 合并
                 df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
-
-                # df
-                df = self.pre_deal(df)
+                # ###############################################################
+                # df_training_0 = df_training[df_training[DefaultConfig.label_column] == 0]
+                # df_training_1 = df_training[df_training[DefaultConfig.label_column] == 1]
+                #
+                # df_training_0 = self.pre_deal(df_training_0)
+                # df_training_1 = self.pre_deal(df_training_1)
+                #
+                # df_training = pd.concat([df_training_0, df_training_1], axis=0, ignore_index=True)
+                #
+                # df_training.sort_values(by='ID', inplace=True)
+                #
+                # df_training.reset_index(drop=True, inplace=True)
+                # # 合并
+                # df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
+                #
+                # # df
+                # df = self.pre_deal(df)
 
             elif DefaultConfig.select_model is 'cbt':
                 # ################################################################ 先合并，再处理
@@ -343,7 +385,7 @@ class Preprocess(object):
             data.append(pd.read_csv(DefaultConfig.project_path + '/data/submit/' + modeltype + '_rate_submit.csv',
                                     encoding='utf-8'))
 
-        data[0][predict_column] = data[0][predict_column] * 0.0 + data[1][predict_column] * 1.0
+        data[0][predict_column] = data[0][predict_column] * 0.2 + data[1][predict_column] * 0.8
 
         result = []
         for i in list(data[0][predict_column]):
