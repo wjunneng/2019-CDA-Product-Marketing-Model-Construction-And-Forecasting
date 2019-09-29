@@ -164,22 +164,15 @@ class Preprocess(object):
             df_test.replace('?', np.nan, inplace=True)
 
             if DefaultConfig.select_model is 'lgbm':
-                # df_test
-                df_test = self.pre_deal(df_test)
-                # df_training
-                df_training = self.pre_deal(df_training)
-
-                # 合并
-                df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
-
-            elif DefaultConfig.select_model is 'cbt':
-                # ################################################################ 先合并，再处理
-                # 合并
+                # ###############################################################
+                # # df_test
+                # df_test = self.pre_deal(df_test)
+                # # df_training
+                # df_training = self.pre_deal(df_training)
+                #
+                # # 合并
                 # df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
-
-                # df
-                # df = self.pre_deal(df)
-                # ################################################################# 先处理，再合并
+                # ###############################################################
                 df_training_0 = df_training[df_training[DefaultConfig.label_column] == 0]
                 df_training_1 = df_training[df_training[DefaultConfig.label_column] == 1]
 
@@ -196,6 +189,31 @@ class Preprocess(object):
 
                 # df
                 df = self.pre_deal(df)
+
+            elif DefaultConfig.select_model is 'cbt':
+                # ################################################################ 先合并，再处理
+                # 合并
+                df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
+
+                # df
+                df = self.pre_deal(df)
+                # ################################################################# 先处理，再合并
+                # df_training_0 = df_training[df_training[DefaultConfig.label_column] == 0]
+                # df_training_1 = df_training[df_training[DefaultConfig.label_column] == 1]
+                #
+                # df_training_0 = self.pre_deal(df_training_0)
+                # df_training_1 = self.pre_deal(df_training_1)
+                #
+                # df_training = pd.concat([df_training_0, df_training_1], axis=0, ignore_index=True)
+                #
+                # df_training.sort_values(by='ID', inplace=True)
+                #
+                # df_training.reset_index(drop=True, inplace=True)
+                # # 合并
+                # df = pd.concat([df_training, df_test], ignore_index=True, axis=0)
+                #
+                # # df
+                # df = self.pre_deal(df)
 
             # 整数变量需要转化为整数
             df[DefaultConfig.int_columns] = df[DefaultConfig.int_columns].astype(int)
@@ -289,6 +307,7 @@ class Preprocess(object):
             sub.loc[sub[sub['ID'].isin(DefaultConfig.rule_ID_0)].index, predict_column] = 0
             print('rule_0 after sum(prediction=1): ', sub[sub[predict_column] == 1].shape[0])
 
+            print(list(sub[sub[predict_column] == 1].index))
             sub.to_csv(
                 path_or_buf=DefaultConfig.project_path + '/data/submit/' + DefaultConfig.select_model + '_rate_submit.csv',
                 index=False, encoding='utf-8')

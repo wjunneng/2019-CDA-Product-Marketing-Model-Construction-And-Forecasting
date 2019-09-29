@@ -67,19 +67,8 @@ class DefaultConfig(object):
 
     elif select_model is 'cbt':
         columns = list(
-            ["age",
-             "Product service usage",
-             "Point balance",
-             "User area",
-             "gender",
-             "Estimated salary",
-             "Cumulative using time",
-             "Active user",
-             "ID",
-             "Product using score",
-             "Pay a monthly fee by credit card"]
-
-        )
+            ['Product service usage', 'age', 'Point balance', 'User area', 'Active user', 'Estimated salary',
+             'Product using score', 'ID', 'gender', 'Cumulative using time', 'Pay a monthly fee by credit card'])
         columns.append('Purchase or not')
         # before_after
         before_after = ['before']
@@ -89,6 +78,6 @@ class DefaultConfig(object):
         # before_after
         before_after = 'before_after'
 
-    # rule_ID_1
     rule_ID_1 = [8924, 1877, 2463, 9256, 3366, 2500, 8042, 1470, 8851, 5286, 2542, 5138, 5495, 6254]
+
     rule_ID_0 = [372, 2459, 3603, 3367, 253, 4257, 2003, 5491]
