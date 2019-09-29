@@ -1,6 +1,6 @@
 import gc
 import numpy as np
-import catboost as cbt
+import lightgbm as lgb
 from sklearn.metrics import log_loss, roc_auc_score, f1_score
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,7 +9,7 @@ from configuration.config import DefaultConfig
 from demo.preprocess import Preprocess
 
 
-class CatBoost(object):
+class LightGbm(object):
     def __init__(self, X_train, X_test):
         self.X_train = X_train
         self.X_test = X_test
@@ -28,7 +28,7 @@ class CatBoost(object):
 
     def main(self, **params):
         """
-        cbt 模型
+        lgb 模型
         :param new_train:
         :param y:
         :param new_test:
@@ -51,6 +51,12 @@ class CatBoost(object):
         print(DefaultConfig.select_model + ' start training...')
 
         for model_seed in range(num_model_seed):
+            params = {'bagging_fraction': 0.5121462324340804, 'feature_fraction': 0.5174384402885819,
+                      'lambda_l1': 4.969972779088037, 'lambda_l2': 0.9329835645863005, 'max_depth': 5,
+                      'min_child_weight': 5.594628962551301, 'min_split_gain': 0.04198971046219193, 'num_leaves': 25,
+                      'application': 'binary', 'num_iterations': 2019, 'learning_rate': 0.05,
+                      'early_stopping_round': 100}
+
             print('模型 ', model_seed + 1, ' 开始训练')
 
             oof_lgb = np.zeros((self.X_train.shape[0]))
@@ -71,11 +77,11 @@ class CatBoost(object):
                                                df_training.loc[:, DefaultConfig.label_column], \
                                                df_validation.loc[:, DefaultConfig.label_column]
 
-            gc.collect()
-            bst = cbt.CatBoostClassifier(iterations=2000, learning_rate=0.005, verbose=300,
-                                         early_stopping_rounds=1666, task_type='GPU', use_best_model=True)
+            train_data = lgb.Dataset(train_x, label=train_y)
+            validation_data = lgb.Dataset(test_x, label=test_y)
 
-            bst.fit(train_x, train_y, eval_set=(test_x, test_y))
+            gc.collect()
+            bst = lgb.train(params, train_data, valid_sets=[validation_data], verbose_eval=1000, feval=self.f1_score)
 
             oof_lgb[test_x.index] += bst.predict(test_x)
 
@@ -85,8 +91,9 @@ class CatBoost(object):
 
             # 存放特征重要性
             feature_importance_df = pd.DataFrame()
-            feature_importance_df["feature"] = list(bst.feature_names_)
-            feature_importance_df["importance"] = bst.get_feature_importance()
+            feature_importance_df["feature"] = list(bst.feature_name())
+            feature_importance_df["importance"] = bst.feature_importance(importance_type='split',
+                                                                         iteration=bst.best_iteration)
 
             oof += oof_lgb / num_model_seed
             prediction += prediction_lgb / num_model_seed
@@ -114,3 +121,4 @@ class CatBoost(object):
             plt.show()
 
         return prediction
+

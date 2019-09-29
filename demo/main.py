@@ -2,8 +2,7 @@ import warnings
 
 from configuration.config import DefaultConfig
 from demo.preprocess import Preprocess
-from model.lightgbm import LightGbm
-from model.catboost import CatBoost
+from model.cbt import CatBoost
 
 warnings.filterwarnings('ignore')
 
@@ -22,7 +21,7 @@ def main():
 
     if DefaultConfig.select_model is 'merge':
         # merge
-        preprocess.merge()
+        preprocess.merge(modeltypes=DefaultConfig.modeltypes)
         print('\nmerge 耗时： %s \n' % str(time.clock() - start))
 
         return
@@ -31,18 +30,26 @@ def main():
     df_training, df_test = preprocess.main()
     print('\n加载数据 耗时： %s \n' % str(time.clock() - start))
 
-    print(list(df_training.columns))
-    df_training = df_training[DefaultConfig.columns]
-    df_test = df_test[DefaultConfig.columns]
+    # df_training = df_training[DefaultConfig.columns]
+    # df_test = df_test[DefaultConfig.columns]
 
-    if DefaultConfig.select_model is 'lgb':
+    if DefaultConfig.select_model is 'lgbm':
+        from model.lgbm import LightGbm
         # 获取验证集数据
         prediction = LightGbm(df_training, df_test).main()
         print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
+
+    elif DefaultConfig.select_model is 'lgbm_classifier':
+        from model.lgbm_classifier import LightGbm
+        # 获取验证集数据
+        prediction = LightGbm(df_training, df_test).main()
+        print('\n模型训练+预测 耗时: %s \n' % str(time.clock() - start))
+
     elif DefaultConfig.select_model is 'cbt':
         # 获取验证集数据
         prediction = CatBoost(df_training, df_test).main()
         print('\n模型训练+预测 耗时： %s \n' % str(time.clock() - start))
+
     # elif DefaultConfig.select_model is 'xgb':
     #     # 获取验证集数据
     #     prediction = xgb_model(df_training, df_test, validation_type=[DefaultConfig.before_after])

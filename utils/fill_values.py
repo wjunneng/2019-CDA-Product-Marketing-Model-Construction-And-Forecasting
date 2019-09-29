@@ -14,7 +14,7 @@ class FillValues(object):
         :param params:
         :return:
         """
-        before = self.df[self.columns]
+        before = self.df[self.columns].values
         after = knnimput.KNN(k=16).complete(before)
         self.df[self.columns] = after
 
@@ -27,7 +27,7 @@ class FillValues(object):
         :param params:
         :return:
         """
-        before = self.df[self.columns]
+        before = self.df[self.columns].values
         after = mice.MICE().complete(before)
         self.df[self.columns] = after
 
@@ -41,7 +41,7 @@ class FillValues(object):
         :param params:
         :return:
         """
-        before = self.df[self.columns]
+        before = self.df[self.columns].values
         after = iterforest.IterImput().complete(before)
         self.df[self.columns] = after
 
@@ -54,8 +54,8 @@ class FillValues(object):
         :param params:
         :return:
         """
-        before = self.df[self.columns]
-        after = EM().complete(before)
+        before = self.df[self.columns].values
+        after = EM(max_iter=1000).complete(before)
         self.df[self.columns] = after
 
         return self.df
@@ -77,7 +77,6 @@ class FillValues(object):
         elif fillmethod is 'mean':
             # 均值填充
             for column in self.columns:
-                self.df[column] = self.df[column].astype(float)
                 self.df[column].fillna(self.df[column].mean(), inplace=True)
 
             return self.df

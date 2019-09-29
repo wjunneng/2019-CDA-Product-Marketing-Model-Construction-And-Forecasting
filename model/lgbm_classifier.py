@@ -51,24 +51,23 @@ class LightGbm(object):
         print(DefaultConfig.select_model + ' start training...')
 
         for model_seed in range(num_model_seed):
-            params = {
-                'learning_rate': 0.005,
-                'boosting_type': 'gbdt',
-                'objective': 'binary',
-                'feature_fraction': 0.8,
-                'bagging_fraction': 0.8,
-                'bagging_freq': 5,
-                'num_leaves': 100,
-                'verbose': -1,
-                'max_depth': -1,
-                'seeds': seeds[model_seed]
-
-            }
+            bst = lgb.LGBMClassifier(boosting_type='rf',
+                                     objective='binary',
+                                     metric='F1',
+                                     verbose=0,
+                                     learning_rate=0.005,
+                                     num_leaves=100,
+                                     feature_fraction=0.8,
+                                     bagging_fraction=0.9,
+                                     bagging_freq=8,
+                                     lambda_l1=0.6,
+                                     random_state=seeds[model_seed])
 
             print('模型 ', model_seed + 1, ' 开始训练')
 
             oof_lgb = np.zeros((self.X_train.shape[0]))
 
+            # 有了gridsearch我们便不需要fit函数
             # 获取验证集
             df_training, df_validation, df_test = Preprocess.get_validation_data(df_training=self.X_train,
                                                                                  df_test=self.X_test)
@@ -85,13 +84,17 @@ class LightGbm(object):
                                                df_training.loc[:, DefaultConfig.label_column], \
                                                df_validation.loc[:, DefaultConfig.label_column]
 
-            train_data = lgb.Dataset(train_x, label=train_y)
-            validation_data = lgb.Dataset(test_x, label=test_y)
+            train_y = train_y.astype(int)
+            test_y = test_y.astype(int)
 
             gc.collect()
-            bst = lgb.train(params, train_data, valid_sets=[validation_data], num_boost_round=10000,
-                            verbose_eval=1000,
-                            early_stopping_rounds=2019, feval=self.f1_score)
+            bst.fit(X=train_x, y=train_y, eval_set=(test_x, test_y))
+
+            # 特征选择
+            # y_train = self.X_train[DefaultConfig.label_column].astype(int)
+            # self.X_train.drop(labels=DefaultConfig.label_column, axis=1, inplace=True)
+            # self.X_train = FeatureSelection(X_train=self.X_train, y_train=y_train).boruta(bst)
+            # self.X_train[DefaultConfig.label_column] = y_train
 
             oof_lgb[test_x.index] += bst.predict(test_x)
 
@@ -99,11 +102,12 @@ class LightGbm(object):
 
             gc.collect()
 
+            del self.X_train[DefaultConfig.label_column]
+
             # 存放特征重要性
             feature_importance_df = pd.DataFrame()
-            feature_importance_df["feature"] = list(bst.feature_name())
-            feature_importance_df["importance"] = bst.feature_importance(importance_type='split',
-                                                                         iteration=bst.best_iteration)
+            feature_importance_df["feature"] = list(self.X_train.columns)
+            feature_importance_df["importance"] = bst.feature_importances_
 
             oof += oof_lgb / num_model_seed
             prediction += prediction_lgb / num_model_seed

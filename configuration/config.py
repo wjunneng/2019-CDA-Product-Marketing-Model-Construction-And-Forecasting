@@ -21,19 +21,12 @@ class DefaultConfig(object):
     # df_training 路径
     df_training_path = project_path + '/data/original/df_training.csv'
 
-    # select_model
-    # select_model = 'lgb'
-    select_model = 'cbt'
-    # select_model = 'xgb'
-    # select_model = 'merge'
-
-    # merge_type
-    # merge_type = 'lgb_cbt_xgb'
-    merge_type = 'lgb_cbt'
-    # merge_type = 'lgb_xgb'
-
     # label_column
     label_column = "Purchase or not"
+    # predict_column
+    predict_column = "Predicted_Results"
+    # submition
+    submition = project_path + '/data/submit/submition.csv'
 
     # ###################################################### cache
     df_no_replace = False
@@ -46,77 +39,56 @@ class DefaultConfig(object):
     cbt_feature_cache_path = project_path + '/data/cache/cbt_feature.h5'
     # ######################################################
 
-    # 类别特征
-    categorical_columns = ["User area", "gender", "Cumulative using time", "Product service usage",
-                           "Pay a monthly fee by credit card", "Active user"]
-    # 整数特征
-    int_columns = ["ID", "Product using score", "User area", "gender", "age", "Cumulative using time",
-                   "Product service usage", "Pay a monthly fee by credit card", "Active user"]
+    # select_model
+    # select_model = 'lgbm'
+    # select_model = 'lgbm_classifier'
+
+    select_model = 'cbt'
+    # select_model = 'xgb'
+    # select_model = 'merge'
+
+    modeltypes = ['lgbm', 'cbt']
+
     # 浮点型特征
     float_columns = ["Point balance", "Estimated salary"]
 
-    if select_model is 'lgb':
-        # mean/mode 0.837
-        columns = ["ID", "Estimated salary_groupby_age_mean_ratio", "Estimated salary",
-                   "Point balance_groupby_age_mean_ratio", "Product using score",
-                   "Point balance", "age", "Cumulative using time", "User area", "gender",
-                   "Product service usage", "Active user", "Pay a monthly fee by credit card"]
+    # 整数特征
+    int_columns = ["ID", "Product using score", "User area", "gender", "age", "Cumulative using time",
+                   "Product service usage", "Pay a monthly fee by credit card", "Active user"]
 
-        columns.append("Purchase or not")
+    if select_model is 'lgbm':
+        columns = list(
+            ['age', 'Product using score', 'Point balance', 'Estimated salary', 'ID', 'Product service usage',
+             'User area', 'gender', 'Cumulative using time', 'Active user', 'Pay a monthly fee by credit card'])
+        columns.append('Purchase or not')
 
         # before_after
         before_after = 'before'
 
     elif select_model is 'cbt':
-        # 0.837
-        columns = ["age",
-                   "Product service usage",
-                   "Point balance",
-                   "User area",
-                   "gender",
-                   "Estimated salary",
-                   "Cumulative using time",
-                   "Active user",
-                   "ID",
-                   "Product using score",
-                   "Pay a monthly fee by credit card"]
+        columns = list(
+            ["age",
+             "Product service usage",
+             "Point balance",
+             "User area",
+             "gender",
+             "Estimated salary",
+             "Cumulative using time",
+             "Active user",
+             "ID",
+             "Product using score",
+             "Pay a monthly fee by credit card"]
 
-        columns.append("Purchase or not")
-
-        before_after = 'before'
+        )
+        columns.append('Purchase or not')
+        # before_after
+        before_after = ['before']
 
     elif select_model is 'xgb':
-        columns = ["Product service usage", "Active user", 'age', "User area", "Point balance", 'gender',
-                   "Estimated salary", 'ID', "Product using score", "Pay a monthly fee by credit card",
-                   "Cumulative using time"]
-
-        columns.append("Purchase or not")
 
         # before_after
         before_after = 'before_after'
 
-    # lgb before submit
-    lgb_before_submit = project_path + '/data/submit/lgb_before_submit.csv'
-    # lgb after submit
-    lgb_after_submit = project_path + '/data/submit/lgb_after_submit.csv'
-    # lgb before_after submit
-    lgb_before_after_submit = project_path + '/data/submit/lgb_before_after_submit.csv'
-
-    # cbt before submit
-    cbt_before_submit = project_path + '/data/submit/cbt_before_submit.csv'
-    # cbt after submit
-    cbt_after_submit = project_path + '/data/submit/cbt_after_submit.csv'
-    # cbt before_after submit
-    cbt_before_after_submit = project_path + '/data/submit/cbt_before_after_submit.csv'
-
-    # xgb before submit
-    xgb_before_submit = project_path + '/data/submit/xgb_before_submit.csv'
-    # xgb after submit
-    xgb_after_submit = project_path + '/data/submit/xgb_after_submit.csv'
-    # xgb before_after submit
-    xgb_before_after_submit = project_path + '/data/submit/xgb_before_after_submit.csv'
-
-    # lgb submit
-    lgb_submit = project_path + '/data/submit/lgb_submit.csv'
-    # submition
-    submition = project_path + '/data/submit/submition.csv'
+    # rule_ID_1
+    rule_ID_1 = [8924, 1877, 2463, 9256, 3366, 2500, 8042, 1470, 8851, 5286, 2542, 5138, 5495, 6254]
+    rule_ID_0 = [372, 2459, 3603, 3367, 253, 4257, 2003, 5491]
