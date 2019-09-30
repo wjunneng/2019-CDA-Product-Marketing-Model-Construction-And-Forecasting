@@ -135,7 +135,7 @@ class CatBoost(object):
         prediction = np.zeros((self.X_test.shape[0]))
 
         seeds = [42, 2019, 223344, 2019 * 2 + 1024, 332232111]
-        num_model_seed = 1
+        num_model_seed = 5
 
         print(DefaultConfig.select_model + ' start training...')
 
@@ -163,7 +163,8 @@ class CatBoost(object):
 
             gc.collect()
             bst = cbt.CatBoostClassifier(iterations=2000, learning_rate=0.005, verbose=300,
-                                         early_stopping_rounds=1666, task_type='GPU', use_best_model=True)
+                                         early_stopping_rounds=1666, task_type='GPU', use_best_model=True,
+                                         random_state=seeds[num_model_seed])
 
             bst.fit(train_x, train_y, eval_set=(test_x, test_y))
 

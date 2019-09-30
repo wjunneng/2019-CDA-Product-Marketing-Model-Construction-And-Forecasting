@@ -382,14 +382,21 @@ class Preprocess(object):
         predict_column = DefaultConfig.predict_column
 
         for modeltype in modeltypes:
-            data.append(pd.read_csv(DefaultConfig.project_path + '/data/submit/' + modeltype + '_rate_submit.csv',
-                                    encoding='utf-8'))
+            if modeltype is 'cbt':
+                print('cbt')
+                data.append(pd.read_csv(DefaultConfig.project_path + '/data/submit/' + modeltype + '_submit.csv',
+                                        encoding='utf-8'))
+            else:
+                print('lgb')
+                data.append(pd.read_csv(DefaultConfig.project_path + '/data/submit/' + modeltype + '_submit.csv',
+                                        encoding='utf-8'))
 
-        data[0][predict_column] = data[0][predict_column] * 0.2 + data[1][predict_column] * 0.8
+        # data[0][predict_column] = data[0][predict_column] * 0 + data[1][predict_column] * 1.0
 
         result = []
+        print(np.var(data[0][predict_column].values))
         for i in list(data[0][predict_column]):
-            if i >= 0.5 + np.var(np.array(result)):
+            if i >= 0.5 + 0.1 * np.var(data[0][predict_column].values):
                 result.append(1)
             else:
                 result.append(0)

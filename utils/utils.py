@@ -43,7 +43,7 @@ class Utils:
 
     @staticmethod
     def get_validation_sample_weight(X_train: pd.DataFrame, X_valid: pd.DataFrame, y_train, y_valid,
-                                     categorical_columns: list, label_column: str, random_state: int = 42,
+                                     label_column: str, categorical_columns: list = 'auto', random_state: int = 42,
                                      **params) -> (pd.DataFrame, pd.DataFrame, list, list):
         """
         获取样本权重

@@ -54,7 +54,7 @@ class LightGbm(object):
             params = {'bagging_fraction': 0.9058367881361415, 'feature_fraction': 0.8553295404272032,
                       'lambda_l1': 4.62589072415979, 'lambda_l2': 0.16388718639878053, 'max_depth': 5,
                       'min_child_weight': 5.145828593798635, 'min_split_gain': 0.033193758010569265, 'num_leaves': 26,
-                      'application': 'binary', 'num_iterations': 2019, 'learning_rate': 0.05,
+                      'application': 'binary', 'num_iterations': 2019, 'learning_rate': 0.01,
                       'early_stopping_round': 100}
 
             print('模型 ', model_seed + 1, ' 开始训练')

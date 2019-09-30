@@ -47,7 +47,7 @@ class DefaultConfig(object):
     # select_model = 'xgb'
     select_model = 'merge'
 
-    modeltypes = ['lgbm', 'cbt']
+    modeltypes = ['cbt']
 
     # 浮点型特征
     float_columns = ["Point balance", "Estimated salary"]
