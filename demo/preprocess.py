@@ -396,7 +396,7 @@ class Preprocess(object):
         result = []
         print(np.var(data[0][predict_column].values))
         for i in list(data[0][predict_column]):
-            if i >= 0.5 + 0.1 * np.var(data[0][predict_column].values):
+            if i >= 0.5 + 0.3 * np.var(data[0][predict_column].values):
                 result.append(1)
             else:
                 result.append(0)
